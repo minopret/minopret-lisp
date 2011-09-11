@@ -120,6 +120,7 @@ def _fixpoint(env, name, arg_atom_list, expr):
 
 
 def _load_primitives():
+    # Unused
     return (
         ("quote", _quote),
         ("atom",  _atom),
@@ -133,7 +134,7 @@ def _load_primitives():
 
 def _load_the_language():
 
-    env = _load_primitives()
+    env = ()  # _load_primitives()
     
     # These capitalized variables are just visual reminders that
     # these few strings represent the primitives of the language.
@@ -558,4 +559,59 @@ def _load_the_language():
     ))
     
     return env
+
+
+def _evlis(m, a):
+    return map(lambda e: _eval(e, a), m)
+
+
+def _evcon(c, a):
+    result = ()
+    for case in c:
+        if _eval(case[0], a) == "t":
+            result = _eval(case[1], a)
+            break
+    return result
+
+
+def _eval(e, a):
+    while (True):  # catch some proper tail calls
+        if _atom(e) == "t":
+            e = ("assoc", e, a)
+        elif _atom(e[0]) == "t":
+            car = e[0]
+            # It's possible to replace these seven cases
+            # by placing the function objects in the
+            # environment, then testing for a car of
+            # FunctionType.
+            if car == "quote":
+                result = e[1]
+                break
+            elif car == "atom":
+                result = _atom(e[1])
+                break
+            elif car == "eq":
+                result = _eq(e[1], e[2])
+                break
+            elif car == "car":
+                result = e[1][0]
+                break
+            elif car == "cdr":
+                result = e[1][1:]
+                break
+            elif car == "cons":
+                result = _cons(e[1], e[2])
+                break
+            elif car == "cond":
+                result = _evcon(e[1:], a)
+                break
+            else:
+                e = _cons(_eval(("assoc", car, a), a), e[1:])
+        elif e[0][0] == "lambda":
+            e = e[0][3]
+            a = _eval(("append", ("pair", e[0][1], _evlis(e[1:], a)), a))
+        elif e[0][0] == "label":
+            e = (e[0][2], ) + e[1:]
+            a = ((e[0][1], e[0]), a)
+    return result
 
