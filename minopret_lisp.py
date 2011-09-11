@@ -1,7 +1,11 @@
 #!/usr/bin/python
 
+# A Lisp in the manner of John McCarthy (1960).
 # Created: "minopret" (Aaron Mansheim), 2011-09-06 to 2011-09-09
 #
+# I think what I'd like to do is to design a really simple
+# virtual machine that supports this Lisp, then port the VM
+# to all the languages on coderwall that I have the patience for.
 # 
 # Follows Paul Graham's representation
 # in "The Roots of Lisp" of John McCarthy's 1960 paper
@@ -39,14 +43,14 @@ def _quote(e):
 
 
 def _atom(a):
-    if a is () or isinstance(a, StringTypes) or isinstance(a, FunctionType):
+    if a is () or isinstance(a, StringTypes):
         return "t"
     else:
         return ()
 
 
 def _eq(a, b):
-    if (a == b):
+    if _atom(a) and _atom(b) and a == b:
         return "t"
     else:
         return ()
@@ -72,44 +76,50 @@ def _cdr(e):
 # Lisp is written in Lisp, not Python.
 #
 # See near the end of this file for the definition of _eval.
-def _cond(c, a):
+def _cond(c):
     result = ()
     for p in c:
-        (e0, a0) = _eval(_car(p), a)
-        if e0 is not ():
+        if _car(p) == "t":
             result = _car(_cdr(p))
             break
     return result
 
 
-# "_defun" is a Python convenience function internal to the
+# "_definition" is a Python convenience function internal to the
 # interpreter only, used for defining predefined but
 # non-builtin functions:
-#   null, and, not, append, list, pair, assoc, eval, evcon, & evlis
+#   null, and, not, list, 
 # in terms of the builtins:
 #   quote, atom, eq, cons, car, cdr, & cond
 #
-# Our language will not enable evaluating (that is, eval)
+# Our language will also enable evaluating (that is, "eval" upon)
 # its two auxiliary functions:
 #   evcon & evlis
-# On the other hand, our language will enable evaluating
-# two more functions via the definition of "eval":
+# Our language will also enable evaluating
+# two more functions interpreted within the definition of "eval":
 #   lambda & label
-#
-# In addition, our language will enable evaluating
-# (that is, transforming by "eval") and applying
-# additional atoms that programs give bindings
-# by means of the non-primitive functions "lambda" and "label".
-# I think it's possible to define "defun" on top of "label"
-# and "lambda", but initially I don't care to try it.
-def _defun(env, name, arg_atom_list, expr):
+def _definition(env, name, arg_atom_list, expr):
     return _cons(
         (name, (("lambda", arg_atom_list), expr)),
         env,
     )
+    
+
+# Mechanism for self-referential definitions of
+# append, pair, assoc, eval, evcon, & evlis.
+# See definition of "lambda" within definition of "eval".
+# This is the function that Paul Graham calls "defun".
+def _fixpoint(env, name, arg_atom_list, expr):
+    return _cons(
+        (
+            name,
+            ("label", name, ("lambda", arg_atom_list, expr)),
+        ),
+        env
+    )
 
 
-def _load_the_builtins():
+def _load_primitives():
     return (
         ("quote", _quote),
         ("atom",  _atom),
@@ -123,90 +133,131 @@ def _load_the_builtins():
 
 def _load_the_language():
 
-    env = _load_the_builtins()
+    env = _load_primitives()
     
     # These capitalized variables are just visual reminders that
     # these few strings represent the primitives of the language.
-    # It's a really, really important distinction between
-    # these strings and the rest.
-    QUOTE = "quote"
-    ATOM = "atom"
-    EQ = "eq"
-    CONS = "cons"
-    CAR = "car"
-    CDR = "cdr"
-    COND = "cond"
+    # It's crucial to notice where the coming predefines are
+    # defined in terms of these primitives, and where they are not,
+    # so that we know they're not defined by mutual circular
+    # references. As we'll see, self-references are actually OK as
+    # long as they involve input of decreasing size that always
+    # ends at some base case.
+    DATA = "quote"
+    IS_ATOM = "atom"
+    IS_EQ = "eq"
+    UNSHIFT = "cons"
+    FIRST = "car"
+    REST = "cdr"
+    MATCH = "cond"
+    
+    
+    # The following predefines are defined only in terms of
+    # primitives.
+    
+    Null = "null"
+    And = "and"
+    Not = "not"
+    List = "list"
+    Second = "cadr"
+    Third = "caddr"
+    FirstOfFirst = "caar"
+    SecondOfFirst = "cadar"
+    ThirdOfFirst = "caddar"
 
     # Test whether an expression equals the empty list.
     # In the returned boolean, use the traditional value representing
     # boolean "false", which is also the empty list.
-    env = _defun(env, "null", ("x"), (EQ, "x", (QUOTE, ())), )
+    env = _definition(env, Null, ("x", ), (IS_EQ, "x", (DATA, ())), )
 
     # Boolean operator "and".
     # Use the traditional value representing
     # boolean "true", which is the atom "t"
     # (Note: NOT a value bound to atom "t",
     # but rather the atom itself).
-    env = _defun(env, "and", ("x", "y"), (
-        COND,
+    env = _definition(env, And, ("x", "y"), (
+        MATCH,
         (
             "x",
             (
-                COND,
-                ("y",          (QUOTE, "t")),
-                ((QUOTE, "t"), (QUOTE, ())),
+                MATCH,
+                ("y",         (DATA, "t")),
+                ((DATA, "t"), (DATA, ())),
             ),
         ),
-        ((QUOTE, "t"), (QUOTE, ()), ),
+        ((DATA, "t"), (DATA, ()), ),
     ))
 
     # Boolean operator "not", accepting any
     # argument except the empty list as boolean "true".
-    env = _defun(env, "not", ("x"), (
-        COND,
-        ("x",          (QUOTE, ())),
-        ((QUOTE, "t"), (QUOTE, "t")),
-    ))
-
-    # Given two lists,
-    # construct a single list that contains all of
-    # their elements in order.
-    env = _defun(env, "append", ("x", "y"), (
-        COND,
-        (
-            ("null", "x"),
-            "y"
-        ),
-        (
-            (QUOTE, "t"),
-            (
-                CONS,
-                (CAR, "x"),
-                ("append", (CDR, "x"), "y"),
-            ),
-        ),
+    env = _definition(env, Not, ("x", ), (
+        MATCH,
+        ("x",         (DATA, ())),
+        ((DATA, "t"), (DATA, "t")),
     ))
 
     # Given two expressions, construct a list
     # that has them as its two elements.
-    env = _defun(env, "list", ("x", "y"), (
-        (CONS, "x", (CONS, "y", (QUOTE, ()), )),
+    env = _definition(env, List, ("x", "y"), (
+        (UNSHIFT, "x", (UNSHIFT, "y", (DATA, ()), )),
+    ))
+    
+    # A few of the ways to use FIRST and REST together
+    env = _definition(env, Second, ("x", ), (FIRST, (REST, "x")), )
+    env = _definition(env, Third, ("x", ), (FIRST, (REST, (REST, "x"))), )
+    env = _definition(env, FirstOfFirst, ("x", ), (FIRST, (FIRST, "x")), )
+    env = _definition(
+        env,
+        SecondOfFirst,
+        ("x", ),
+        (FIRST, (REST, (FIRST, "x"))),
+    )
+    env = _definition(
+        env,
+        ThirdOfFirst,
+        ("x", ),
+        (FIRST, (REST, (REST, (FIRST, "x")))),
+    )
+    
+    
+    
+    # The following predefines are ultimately
+    # defined in terms of the semi-primitives above,
+    # plus self-reference.
+
+    # Given two lists,
+    # construct a single list that contains all of
+    # their elements in order.
+    env = _fixpoint(env, "append", ("x", "y"), (
+        MATCH,
+        (
+            (Null, "x"),
+            "y"
+        ),
+        (
+            (DATA, "t"),
+            (
+                UNSHIFT,
+                (FIRST, "x"),
+                ("append", (REST, "x"), "y"),
+            ),
+        ),
     ))
 
     # Given two lists, construct the list
     # of pairs of corresponding elements.
-    env = _defun(env, "pair", ("x", "y"), (
-        COND,
+    env = _fixpoint(env, "pair", ("x", "y"), (
+        MATCH,
         (
-            ("and", ("null", "x"), ("null", "y")),
-            (QUOTE, ()),
+            (And, (Null, "x"), (Null, "y")),
+            (DATA, ()),
         ),
         (
-            ("and", ("not", (ATOM, "x")), ("not", (ATOM, "y")), ),
+            (And, (Not, (IS_ATOM, "x")), (Not, (IS_ATOM, "y")), ),
             (
-                CONS,
-                ("list", (CAR, "x"), (CAR, "y")),
-                ("pair", (CDR, "x"), (CDR, "y")),
+                UNSHIFT,
+                (List, (FIRST, "x"), (FIRST, "y")),
+                ("pair", (REST, "x"), (REST, "y")),
             ),
         ),
     ))
@@ -214,106 +265,118 @@ def _load_the_language():
     # Given an element x and a list y of pairs,
     # return the second element in the pair
     # that has x as its first element.
-    env = _defun(env, "assoc", ("x", "y"), (
-        COND,
+    env = _fixpoint(env, "assoc", ("x", "y"), (
+        MATCH,
         (
-            (EQ, (CAR, (CAR, "y")), "x", ),
-            (CAR, (CDR, (CAR, "y")), ),
+            (IS_EQ, (FirstOfFirst, "y"), "x"),
+            (SecondOfFirst, "y"),
         ),
         (
-            (QUOTE, "t"),
-            ("assoc", "x", (CDR, "y")),
+            (DATA, "t"),
+            ("assoc", "x", (REST, "y")),
         ),
     ))
+    
+    
+    # "eval" is the crowning achievement that may refer
+    # to any of the other predefines.
+    #
+    # None of the predefines that we have seen so far
+    # refer back to "eval".
+    #
+    # However, as we define "eval", we will break out two
+    # special cases of "eval" as separate predefines "evcon"
+    # and "evlis" that will refer back to "eval".
 
-    # "eval e a" sort of distributes "eval"
+    # In a sense, "eval e a" distributes "eval"
     # over the outer operator of e.
     # "a" is the list that pairs atoms with their bindings,
     # an "association list".
-    env = _defun(env, "eval", ("e", "a"), (
-        COND,
+    env = _fixpoint(env, "eval", ("e", "a"), (
+        MATCH,
         
         # An atom evaluates to its binding in association list "a".
+        # Are we somehow preventing binding and evaluating the empty list??
         (
-            (ATOM, "e"),
+            (IS_ATOM, "e"),
             ("assoc", "e", "a")
         ),
             
         # An application of a primitive function is evaluated
         # according to which function it is.
         (
-            (ATOM, (CAR, "e")),
+            (IS_ATOM, (FIRST, "e")),
             (
-                COND,
+                MATCH,
                 (
                     # An application of "quote" evaluates to
                     # the quoted expression.
-                    (EQ, (CAR, "e"), (QUOTE, QUOTE)),
-                    (CAR, (CDR, "e")),
+                    (IS_EQ, (FIRST, "e"), (DATA, DATA)),
+                    (Second, "e"),
                 ),
                 (
                     # An application of "atom" evaluates to
                     # the result of applying "atom" to
                     # the evaluated first argument.
-                    (EQ, (CAR, "e"), (QUOTE, ATOM)),
-                    (ATOM, ("eval", (CAR, (CDR, "e")), "a")),
+                    (IS_EQ, (FIRST, "e"), (DATA, IS_ATOM)),
+                    (IS_ATOM, ("eval", (Second, "e"), "a")),
                 ),
                 (
                     # An application of "eq" evaluates to
                     # the result of applying "eq" to
-                    # the evaluted first and second arguments.
-                    (EQ, (CAR, "e"), (QUOTE, EQ)),
+                    # the evaluated first and second arguments.
+                    (IS_EQ, (FIRST, "e"), (DATA, IS_EQ)),
                     (
-                        EQ,
-                        ("eval", (CAR, (CDR, "e")), "a"),
-                        ("eval", (CAR, (CDR, (CDR, "e"))), "a"),
+                        IS_EQ,
+                        ("eval", (Second, "e"), "a"),
+                        ("eval", (Third, "e"), "a"),
                     ),
                 ),
                 (
                     # An application of "car" evaluates to
                     # the result of applying "car" to
                     # the evaluated first argument.
-                    (EQ, (CAR, "e"), (QUOTE, CAR)),
-                    (CAR, ("eval", (CAR, (CDR, "e")), "a")),
+                    (IS_EQ, (FIRST, "e"), (DATA, FIRST)),
+                    (FIRST, ("eval", (Second, "e"), "a")),
                 ),
                 (
                     # An application of "cdr" evaluates to
                     # the result of applying "cdr" to
                     # the evaluated first argument.
-                    (EQ, (CAR, "e"), (QUOTE, CDR)),
-                    (CDR, ("eval", (CAR, (CDR, "e")), "a")),
+                    (IS_EQ, (FIRST, "e"), (DATA, REST)),
+                    (REST, ("eval", (Second, "e"), "a")),
                 ),
                 (
                     # An application of "cons" evaluates to
                     # the result of applying "cons" to
                     # the evaluted first and second arguments.
-                    (EQ, (CAR, "e"), (QUOTE, CONS)),
+                    (IS_EQ, (FIRST, "e"), (DATA, UNSHIFT)),
                     (
-                        CONS,
-                        ("eval", (CAR, (CDR, "e")), "a"),
-                        ("eval", (CAR, (CDR, (CDR, "e"))), "a"),
+                        UNSHIFT,
+                        ("eval", (Second, "e"), "a"),
+                        ("eval", (Third, "e"), "a"),
                     ),
                 ),
                 (
                     # An application of "cond" evaluates to
                     # the result of applying "evcon" (defined below)
                     # to the arguments.
-                    (EQ, (CAR, "e"), (QUOTE, COND)),
-                    ("evcon", (CDR, "e"), "a"),
+                    (IS_EQ, (FIRST, "e"), (DATA, MATCH)),
+                    ("evcon", (REST, "e"), "a"),
                 ),
                 (
                     # An application of any another name evaluates to
                     # the result of applying its binding in association list "a"
                     # to the arguments.
-                    (QUOTE, "t"),
+                    (DATA, "t"),
                     (
                         "eval",
-                        (CONS, ("assoc", (CAR, "e"), "a"), (CDR, "e"), ),
+                        (UNSHIFT, ("assoc", (FIRST, "e"), "a"), (REST, "e"), ),
                         "a",
                     ),
                 ),
             ),
-        ),  # (ATOM, (CAR, "e"))
+        ),  # (IS_ATOM, (FIRST, "e"))
         
         # An application of a list may be evaluated
         # if the list is itself an application of atom "lambda"
@@ -336,96 +399,126 @@ def _load_the_language():
         # where b is "a" with all of the param-arg pairs prepended.
         
         (
-            (EQ, (CAR, (CAR, "e")), (QUOTE, "lambda")),
+            (IS_EQ, (FirstOfFirst, "e"), (DATA, "lambda")),
             (
                 "eval",
-                (CAR, (CDR, (CDR, (CAR, "e")))),
+                (ThirdOfFirst, "e"),
                 (
                     "append",
                     (
                         "pair",
-                        (CAR, (CDR, (CAR, "e"))),
-                        ("evlis", (CDR, "e"), "a"),
+                        (SecondOfFirst, "e"),
+                        ("evlis", (REST, "e"), "a"),
                     ),
                     "a",
                 ),
             ),
         ),
-        
-        # One final clause in eval: "label".
-        #
-        # This one is a humdinger. It's considered
-        # historical and obsolete. However, Paul Graham writes
-        # in his online article that it's actually easier to read
-        # than a modern equivalent such as the "y combinator"
-        # that he values so highly.
-        #
-        # Let's look at the abstract pattern and then we'll
-        # look at the practical case. Schematically:
-        # Let w have first element (label z x) and
-        # list y of remaining elements.
-        # That is, w is (cons '(label z x) 'y), evaluated.
-        # Let a be the current association list.
-        # Then w evaluates to:
-        #   ( eval (x y) b )
-        # where b is a with (z (label z x)) prepended to it.
-        #
-        # Not very clear, right? But when we consider what we actually
-        # want to do with it, it will work nicely. We want to use it
-        # to define functions that refer to themselves.
-        #
-        # Example, function "map_f_over_l" with argument "atom"
-        # for parameter f and a list of quoted expressions for
-        # parameter l:
-        #
-        #   (eval ((label map_f_over_l (lambda (f l) (
-        #       cond
-        #       ((null l) (quote ()))
-        #       ((quote t) (
-        #           cons
-        #           (f (car l))
-        #           (map_f_over_l (cdr l))
-        #       ))
-        #   ))) atom ((quote atom) (quote ()) (quote (car cdr))) ) a)
-        #   ==> (eval ((lambda (f l) (
-        #           cond
-        #           ((null l) (quote ()))
-        #           ((quote t) (
-        #               cons
-        #               (f (car l))
-        #               (map_f_over_l (cdr l))
-        #           ))
-        #       )) atom ((quote atom) (quote ()) (quote (car cdr))) ) b)
-        # where b is a with the following binding of map_f_over_l
-        # prepended to it:
-        #
-        # (map_f_over_l (label map_f_over_l (lambda (f l) (
-        #     cond
-        #     ((null l) (quote ()))
-        #     ((quote t) (
-        #         cons
-        #         (f (car l))
-        #         (map_f_over_l (cdr l))
-        #     ))
-        # ))))
-        #
-        # Because this application of "label" in the association list
-        # is the same one that we started with, evaluating map_f_over_l
-        # using this binding will have the same desirable effect as we
-        # have already seen.
+
+# One final clause in eval: "label".
+#
+# This one is a humdinger. It's considered
+# historical and obsolete. However, Paul Graham writes
+# in his online article that it's actually easier to read
+# than a modern equivalent such as the "y combinator"
+# that he values so highly.
+#
+# Let's look at the abstract pattern and then we'll
+# look at the practical case. Schematically:
+# Let w have first element (label z x) and
+# list y of remaining elements.
+# That is, evaluating (cons '(label z x) y) gives w.
+# Let a be the current association list.
+# Then evaluating w gives:
+#   ( eval (x y) b )
+# where b is a with (z (label z x)) prepended to it.
+#
+# Not very clear, right? But when we consider what we actually
+# want to do with it, it will work nicely. We want to use it
+# to define functions that refer to themselves.
+#
+# Example, function "map_f_over_l" with argument "atom"
+# for parameter f and a list of quoted expressions for
+# parameter l.
+#
+# Conceptually we want to apply map_f_over_l like this:
+#   (map_f_over_l 'atom '(() (u v) w))
+# We expect, as our result, a list of results of applying
+# "atom" to each element of the list "(() (u v) w)":
+#   (t () t)
+# 
+# How to do it in actuality, using "label" and "lambda":
+#
+#   (
+#       eval
+#       (quote (
+#           (
+#               label
+#               map_f_over_l
+#               (lambda (f l) (
+#                   cond
+#                   ((null l) (quote ()))
+#                   ((quote t) (cons (f (car l)) (map_f_over_l (cdr l))))
+#               ))
+#           )
+#           atom
+#           ((quote ()) (quote (u v)) (quote w))
+#       ))
+#       (quote a)
+#   )
+#
+#   ==>
+#
+#   (
+#       eval
+#       (
+#           (lambda (f l) (
+#               cond
+#               ((null l) (quote ()))
+#               ((quote t) (cons (f (car l)) (map_f_over_l (cdr l))))
+#           ))
+#           atom
+#           ((quote ()) (quote (u v)) (quote w))
+#       )
+#       b
+#   )
+#
+# where "b" is a modification of "a" that incorporates a binding for "map_f_over_l". Specifically, "b" is given by evaluating this:
+#
+#   (
+#       cons
+#       (quote (
+#           map_f_over_l
+#           (
+#               label
+#               map_f_over_l
+#               (lambda (f l) (
+#                   cond
+#                   ((null l) (quote ()))
+#                   ((quote t) (cons (f (car l)) (map_f_over_l (cdr l))))
+#               ))
+#           )
+#       ))
+#       a
+#   )
+#
+# Because this application of "label" in the association list
+# is exactly the same that we started with, evaluating map_f_over_l
+# using this binding will have the same desirable effect as we
+# have already seen.
 
         (
-            (EQ, (CAR, (CAR, "e")), (QUOTE, "label")),
+            (IS_EQ, (FirstOfFirst, "e"), (DATA, "label")),
             (
                 "eval",
                 (
-                    CONS,
-                    (CAR, (CDR, (CDR, (CAR, "e")))),
-                    (CDR, "e"),
+                    UNSHIFT,
+                    (ThirdOfFirst, "e"),
+                    (REST, "e"),
                 ),
                 (
-                    CONS,
-                    ("list", (CAR, (CDR, (CAR, "e"))), (CAR, "e"), ),
+                    UNSHIFT,
+                    (List, (SecondOfFirst, "e"), (FIRST, "e"), ),
                     "a",
                 ),
             ),
@@ -434,86 +527,35 @@ def _load_the_language():
 
     # "evcon": Evaluate a cond whose arguments are the elements of the
     # list "c". The elements of "c" are condition-result pairs.
-    env = _defun(env, "evcon", ("c", "a"), (
-        COND,
+    env = _fixpoint(env, "evcon", ("c", "a"), (
+        MATCH,
         (
-            ("eval", (CAR, (CAR, "c")), "a"),
-            ("eval", (CAR, (CDR, (CAR, "c"))), "a"),
+            ("eval", (FirstOfFirst, "c"), "a"),
+            ("eval", (SecondOfFirst, "c"), "a"),
         ),
         (
-            (QUOTE, "t"),
-            ("evcon", (CDR, "c"), "a"),
+            (DATA, "t"),
+            ("evcon", (REST, "c"), "a"),
         ),
     ))
 
     # "evlis": Eval each of the elements of a list.
     # In other words, map "eval" over the list.
-    env = _defun(env, "evlis", ("m", "a"), (
-        COND,
+    env = _fixpoint(env, "evlis", ("m", "a"), (
+        MATCH,
         (
-            ("null", "m"),
-            (QUOTE, ()),
+            (Null, "m"),
+            (DATA, ()),
         ),
         (
-            (QUOTE, "t"),
-            (CONS, ("eval", (CAR, "m"), "a"), ("evlis", (CDR, "m"), "a"), ),
+            (DATA, "t"),
+            (
+                UNSHIFT,
+                ("eval", (FIRST, "m"), "a"),
+                ("evlis", (REST, "m"), "a"),
+            ),
         ),
     ))
     
     return env
 
-
-# For the most part evaluation will in fact delegate
-# to the _defun(env, "eval", ...) above.
-# However, this inaccessible built-in is needed
-# in order to get the ball rolling in Python.
-# In effect, this is our Lisp virtual machine, or "kernel".
-# It implements features of Lisp that are implicit:
-#   the environment (particularly as used by "cond"),
-#   interpreting "procedure calls" aka "apply",
-#   applying builtin functions.
-def _eval(e, a):
-
-    result = ()
-    if _atom(e):
-        result = e
-    else:
-        car = _car(e)
-        
-        # Does that atom stand for a builtin?
-        # This is incorrect because the eval ends up being circular!
-        #
-        #if not isinstance(car, FunctionType) and _atom(car) == "t":
-        #    car0 = _eval((_global__assoc_in_lisp, car), a)
-        #    if isinstance(car0, FunctionType):
-        #        car = car0
-        
-        # TODO
-        #if ... 'lambda' or 'label'
-        #    ...I could hold off on this
-        # I suppose it is not customary to evaluate the name
-        # or argument of a label or the parameters of a lambda.
-        #el
-        if isinstance(car, FunctionType):
-            # 1-place functions
-            if car in (_atom, _car, _cdr, _quote):
-                result = car(_car(_cdr(e)))
-            # 2-place functions
-            elif car in (_eq, _cons):
-                result = car(_car(_cdr(e)), _car(_cdr(_cdr(e))))
-            # Function of one list, which also needs to take
-            # the current environment as an argument.
-            elif car is _cond:
-                result = _cond(_car(_cdr(e)), a)
-        elif _atom(car) == "t":
-            # This is very questionable
-            (result, a) = _eval((_assoc, car), a)
-        else:
-            # This is very questionable
-        
-            # error: Can't apply an expression unless it
-            # is a lambda list (lambda (...)), is a label list (label ,
-            # evaluates to one of those, evaluates to a built-in,
-            # or evaluates to an atom.
-            raise TypeError
-    return (result, a)
