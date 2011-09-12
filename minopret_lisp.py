@@ -1,22 +1,31 @@
 #!/usr/bin/python
 
 # A Lisp in the manner of John McCarthy (1960).
-# Created: "minopret" (Aaron Mansheim), 2011-09-06 to 2011-09-09
+# Created: "minopret" (Aaron Mansheim), 2011-09-06 to 2011-09-11
 #
-# I think what I'd like to do is to design a really simple
-# virtual machine that supports this Lisp, then port the VM
-# to all the languages on coderwall that I have the patience for.
+# I hope this makes clear to anyone who reads it
+# how an elementary Lisp runtime works. Based on this
+# (or any of what I suppose must be many other tutorial
+# Lisp implementations) I expect that others and I will
+# be able to produce and enhance a Lisp within any existing
+# runtime system.
 # 
-# Follows Paul Graham's representation
+# This closely follows Paul Graham's representation
 # in "The Roots of Lisp" of John McCarthy's 1960 paper
 # "Recursive Functions of Symbolic Expressions and Their
 # Computation by Machine, Part I" (of which no other part
-# was published).
+# was published). "The Roots of Lisp" mentions that
+# major inconveniences of 1960 Lisp are mostly resolved
+# in MIT AI Memo No. 453 "The Art of the Interpreter"
+# which may be located via the Computer History Museum:
+# <http://www.softwarepreservation.org/projects/LISP/scheme_family/>
+# The McCarthy paper may be located similarly:
+# <http://www.softwarepreservation.org/projects/LISP/lisp15_family/>
 
 # Thanks to William F. Dowling for reminding me,
 # when I mentioned that I had written the "cond" builtin
-# such that it returned its environment, that "cond" is a
-# pure function. Oh, whoops.
+# such that it consumed and returned its environment,
+# that "cond" is a pure function. Oh, whoops.
 
 # Many Lisp implementations consist of a
 # "read-eval-print loop".
@@ -27,8 +36,8 @@
 
 # I have no illusions that this will break any speed records.
 # That's totally beside the point. In fact,
-# once I check that this works, I will be able to apply
-# my formal logic skills (even Coq) to provide certified
+# once I check that this works, I should be able to apply
+# my formal logic skills (even Coq) to provide certifiably
 # correct optimizations.
 
 
@@ -68,14 +77,6 @@ def _cdr(e):
     return e[1:]
 
 
-# This takes control of which subexpressions are
-# evaluated and which are unevaluated.
-# For that reason it gets the environment "a" from
-# the built-in "_eval" Python function that is not
-# accessible within the Lisp. The "eval" within the
-# Lisp is written in Lisp, not Python.
-#
-# See near the end of this file for the definition of _eval.
 def _cond(c):
     result = ()
     for p in c:
@@ -85,31 +86,37 @@ def _cond(c):
     return result
 
 
-# "_definition" is a Python convenience function internal to the
-# interpreter only, used for defining predefined but
-# non-builtin functions:
-#   null, and, not, list, 
-# in terms of the builtins:
-#   quote, atom, eq, cons, car, cdr, & cond
-#
-# Our language will also enable evaluating (that is, "eval" upon)
-# its two auxiliary functions:
-#   evcon & evlis
-# Our language will also enable evaluating
-# two more functions interpreted within the definition of "eval":
-#   lambda & label
 def _definition(env, name, arg_atom_list, expr):
+    """
+    "_definition" is a Python convenience function internal to the
+    interpreter only, used for defining predefined but
+    non-builtin functions:
+        null, and, not, list, 
+    in terms of the builtins:
+        quote, atom, eq, cons, car, cdr, & cond
+    
+    Our language will also enable evaluating (that is, "eval" upon)
+    its two auxiliary functions:
+        evcon & evlis
+    Our language will further enable evaluating two
+    functions not defined separately, but rather
+    interpreted within the definition of "eval":
+        lambda & label
+    """
     return _cons(
-        (name, (("lambda", arg_atom_list), expr)),
+        (name, ("lambda", arg_atom_list, expr)),
         env,
     )
     
 
-# Mechanism for self-referential definitions of
-# append, pair, assoc, eval, evcon, & evlis.
-# See definition of "lambda" within definition of "eval".
-# This is the function that Paul Graham calls "defun".
 def _fixpoint(env, name, arg_atom_list, expr):
+    """
+    Mechanism for self-referential definitions of
+    append, pair, assoc, eval, evcon, & evlis.
+    This is the function that Paul Graham calls "defun".
+    See definition of "lambda" within definition of "eval"
+    in "_load_the_language".
+    """
     return _cons(
         (
             name,
@@ -119,31 +126,21 @@ def _fixpoint(env, name, arg_atom_list, expr):
     )
 
 
-def _load_primitives():
-    # Unused
-    return (
-        ("quote", _quote),
-        ("atom",  _atom),
-        ("eq",    _eq),
-        ("cons",  _cons),
-        ("car",   _car),
-        ("cdr",   _cdr),
-        ("cond",  _cond),
-    )
-
-
 def _load_the_language():
 
-    env = ()  # _load_primitives()
+    env = ()
     
     # These capitalized variables are just visual reminders that
     # these few strings represent the primitives of the language.
+    # Also I will use alternate names in this context only
+    # in hopes of making this slightly more readable for
+    # novices like me.
+    #
     # It's crucial to notice where the coming predefines are
     # defined in terms of these primitives, and where they are not,
-    # so that we know they're not defined by mutual circular
-    # references. As we'll see, self-references are actually OK as
-    # long as they involve input of decreasing size that always
-    # ends at some base case.
+    # so that we know when they use circular (perhaps mutual)
+    # references. Self-references will actually be necessary,
+    # but not yet.
     DATA = "quote"
     IS_ATOM = "atom"
     IS_EQ = "eq"
@@ -152,7 +149,6 @@ def _load_the_language():
     REST = "cdr"
     MATCH = "cond"
     
-    
     # The following predefines are defined only in terms of
     # primitives.
     
@@ -160,13 +156,17 @@ def _load_the_language():
     And = "and"
     Not = "not"
     List = "list"
+    
+    # Again, I'm using alternate names in this context only
+    # in hopes of making this slightly more readable for
+    # novices like me.
     Second = "cadr"
     Third = "caddr"
     FirstOfFirst = "caar"
     SecondOfFirst = "cadar"
     ThirdOfFirst = "caddar"
 
-    # Test whether an expression equals the empty list.
+    # Null: Test whether an expression equals the empty list.
     # In the returned boolean, use the traditional value representing
     # boolean "false", which is also the empty list.
     env = _definition(env, Null, ("x", ), (IS_EQ, "x", (DATA, ())), )
@@ -200,33 +200,32 @@ def _load_the_language():
     # Given two expressions, construct a list
     # that has them as its two elements.
     env = _definition(env, List, ("x", "y"), (
-        (UNSHIFT, "x", (UNSHIFT, "y", (DATA, ()), )),
+        UNSHIFT,
+        "x",
+        (UNSHIFT, "y", (DATA, ()), ),
     ))
     
     # A few of the ways to use FIRST and REST together
     env = _definition(env, Second, ("x", ), (FIRST, (REST, "x")), )
     env = _definition(env, Third, ("x", ), (FIRST, (REST, (REST, "x"))), )
     env = _definition(env, FirstOfFirst, ("x", ), (FIRST, (FIRST, "x")), )
-    env = _definition(
-        env,
-        SecondOfFirst,
-        ("x", ),
-        (FIRST, (REST, (FIRST, "x"))),
-    )
-    env = _definition(
-        env,
-        ThirdOfFirst,
-        ("x", ),
-        (FIRST, (REST, (REST, (FIRST, "x")))),
-    )
+    env = _definition(env, SecondOfFirst, ("x", ), (
+        FIRST,
+        (REST, (FIRST, "x")),
+    ))
+    env = _definition(env, ThirdOfFirst, ("x", ), (
+        FIRST,
+        (REST, (REST, (FIRST, "x"))),
+    ))
     
     
     
     # The following predefines are ultimately
-    # defined in terms of the semi-primitives above,
-    # plus self-reference.
+    # defined in terms of the primitives and
+    # semi-primitives above, with the added
+    # technique of self-reference.
 
-    # Given two lists,
+    # append: Given two lists,
     # construct a single list that contains all of
     # their elements in order.
     env = _fixpoint(env, "append", ("x", "y"), (
@@ -245,7 +244,7 @@ def _load_the_language():
         ),
     ))
 
-    # Given two lists, construct the list
+    # pair: Given two lists, construct the list
     # of pairs of corresponding elements.
     env = _fixpoint(env, "pair", ("x", "y"), (
         MATCH,
@@ -263,7 +262,7 @@ def _load_the_language():
         ),
     ))
 
-    # Given an element x and a list y of pairs,
+    # assoc: Given an element x and a list y of pairs,
     # return the second element in the pair
     # that has x as its first element.
     env = _fixpoint(env, "assoc", ("x", "y"), (
@@ -279,7 +278,7 @@ def _load_the_language():
     ))
     
     
-    # "eval" is the crowning achievement that may refer
+    # "eval" is the crowning achievement. It may freely refer
     # to any of the other predefines.
     #
     # None of the predefines that we have seen so far
@@ -290,21 +289,21 @@ def _load_the_language():
     # and "evlis" that will refer back to "eval".
 
     # In a sense, "eval e a" distributes "eval"
-    # over the outer operator of e.
+    # over the outer operator of e, much as in arithmetic
+    # multiplication distributes over addition.
     # "a" is the list that pairs atoms with their bindings,
     # an "association list".
     env = _fixpoint(env, "eval", ("e", "a"), (
         MATCH,
         
         # An atom evaluates to its binding in association list "a".
-        # Are we somehow preventing binding and evaluating the empty list??
         (
             (IS_ATOM, "e"),
             ("assoc", "e", "a")
         ),
             
-        # An application of a primitive function is evaluated
-        # according to which function it is.
+        # An application of a primitive function is
+        # generally evaluated using the function itself.
         (
             (IS_ATOM, (FIRST, "e")),
             (
@@ -438,9 +437,8 @@ def _load_the_language():
 # want to do with it, it will work nicely. We want to use it
 # to define functions that refer to themselves.
 #
-# Example, function "map_f_over_l" with argument "atom"
-# for parameter f and a list of quoted expressions for
-# parameter l.
+# Example, define function "map_f_over_l" and use it
+# to map function "atom" over a quoted list of expressions.
 #
 # Conceptually we want to apply map_f_over_l like this:
 #   (map_f_over_l 'atom '(() (u v) w))
@@ -452,7 +450,7 @@ def _load_the_language():
 #
 #   (
 #       eval
-#       (quote (
+#       (
 #           (
 #               label
 #               map_f_over_l
@@ -462,10 +460,10 @@ def _load_the_language():
 #                   ((quote t) (cons (f (car l)) (map_f_over_l (cdr l))))
 #               ))
 #           )
-#           atom
-#           ((quote ()) (quote (u v)) (quote w))
-#       ))
-#       (quote a)
+#           (quote atom)
+#           (quote () (u v) w)
+#       )
+#       a
 #   )
 #
 #   ==>
@@ -561,23 +559,46 @@ def _load_the_language():
     return env
 
 
-def _evlis(m, a):
-    return map(lambda e: _eval(e, a), m)
+# Now to make Lisp programs actually execute in Python!
+# We will do that simply by going over the necessary Lisp code
+# (mostly "eval") and turning it into Python code.
+# We will process the Lisp code by hand, but we could
+# easily imagine processing it automatically, perhaps
+# with a different goal from making Python function calls.
 
-
-def _evcon(c, a):
-    result = ()
-    for case in c:
-        if _eval(case[0], a) == "t":
-            result = _eval(case[1], a)
-            break
-    return result
-
-
+# This is the Lisp function "eval" hand-translated into Python.
+# Because it was simple to inline several of the Lisp functions here,
+# only a few other Lisp functions are represented separately.
+# They are local to _eval just to make clear that they are not used
+# elsewhere.
 def _eval(e, a):
+
+    # This is the Lisp function "assoc" hand-translated into Python.
+    def _assoc(c, a):
+        result = ()
+        for k in a:
+            if k[0] == c:
+                result = k[1]
+                break
+        return result
+
+    # This is the Lisp function "evlis" hand-translated into Python.
+    def _evlis(m, a):
+        return tuple(map(lambda e: _eval(e, a), m))
+
+    # This is the Lisp function "evcon" hand-translated into Python.
+    def _evcon(c, a):
+        result = ()
+        for case in c:
+            if _eval(case[0], a) == "t":
+                result = _eval(case[1], a)
+                break
+        return result
+
     while (True):  # catch some proper tail calls
         if _atom(e) == "t":
-            e = ("assoc", e, a)
+            result = _assoc(e, a)
+            break
         elif _atom(e[0]) == "t":
             car = e[0]
             # It's possible to replace these seven cases
@@ -588,30 +609,33 @@ def _eval(e, a):
                 result = e[1]
                 break
             elif car == "atom":
-                result = _atom(e[1])
+                result = _atom(_eval(e[1], a))
                 break
             elif car == "eq":
-                result = _eq(e[1], e[2])
+                result = _eq(_eval(e[1], a), _eval(e[2], a))
                 break
             elif car == "car":
-                result = e[1][0]
-                break
+                e = e[1][0]
             elif car == "cdr":
-                result = e[1][1:]
-                break
+                e = e[1][1:]
             elif car == "cons":
-                result = _cons(e[1], e[2])
+                result = _cons(_eval(e[1], a), _eval(e[2], a))
                 break
             elif car == "cond":
                 result = _evcon(e[1:], a)
                 break
             else:
-                e = _cons(_eval(("assoc", car, a), a), e[1:])
+                e = _cons(_assoc(car, a), e[1:])
         elif e[0][0] == "lambda":
-            e = e[0][3]
-            a = _eval(("append", ("pair", e[0][1], _evlis(e[1:], a)), a))
+            a = tuple(zip(e[0][1], _evlis(e[1:], a))) + a
+            e = e[0][2]
         elif e[0][0] == "label":
-            e = (e[0][2], ) + e[1:]
             a = ((e[0][1], e[0]), a)
+            e = (e[0][2], ) + e[1:]
     return result
+
+
+def execute_lisp_program(e):
+    env = _load_the_language()
+    return _eval(e, env)
 

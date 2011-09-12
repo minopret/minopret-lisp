@@ -59,21 +59,20 @@
 
 (defun append. (x y) (cond ((null. x) y) ((quote t) (cons (car x) (append. (cdr x) y)))))
 
-(setq caddar. ((lambda. (x)) (car (cdr (cdr (car x))))))
+(setq caddar. (lambda. (x) (car (cdr (cdr (car x))))))
 
-(setq cadar. ((lambda. (x)) (car (cdr (car x)))))
+(setq cadar. (lambda. (x) (car (cdr (car x)))))
 
-(setq caar. ((lambda. (x)) (car (car x))))
+(setq caar. (lambda. (x) (car (car x))))
 
-(setq caddr. ((lambda. (x)) (car (cdr (cdr x)))))
+(setq caddr. (lambda. (x) (car (cdr (cdr x)))))
 
-(setq cadr. ((lambda. (x)) (car (cdr x))))
+(setq cadr. (lambda. (x) (car (cdr x))))
 
-(setq list. ((lambda. (x y)) ((cons x (cons y (quote ()))))))
+(setq list. (lambda. (x y) (cons x (cons y (quote ())))))
 
-(setq not. ((lambda. (x)) (cond (x (quote ())) ((quote t) (quote t)))))
+(setq not. (lambda. (x) (cond (x (quote ())) ((quote t) (quote t)))))
 
-(setq and. ((lambda. (x y)) (cond (x (cond (y (quote t)) ((quote t) (quote ())))) ((quote t) (quote ())))))
+(setq and. (lambda. (x y) (cond (x (cond (y (quote t)) ((quote t) (quote ())))) ((quote t) (quote ())))))
 
-(setq null. ((lambda. (x)) (eq x (quote ()))))
-
+(setq null. (lambda. (x) (eq x (quote ()))))

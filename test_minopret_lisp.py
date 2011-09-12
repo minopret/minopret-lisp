@@ -54,7 +54,8 @@ class test_minopret_lisp(unittest.TestCase):
         )
         self.assertEqual(e, (
             ("c", (
-                ("lambda", ("x", "y")),
+                "lambda",
+                ("x", "y"),
                 ("cons", "x", ("cdr", "y")),
             )),
             ("a", "b"),
@@ -104,17 +105,16 @@ class test_minopret_lisp(unittest.TestCase):
         # Every definition is a lambda construction with a list as body
         for atom in definitions_of_one_param + definitions_of_two_params:
             e = envd[atom]
-            self.assertEqual(len(e), 2)
-            self.assertEqual(len(e[0]), 2)
-            self.assertEqual(e[0][0], "lambda")
-            self.assertTrue(isinstance(e[0][1], tuple))
+            self.assertEqual(len(e), 3)
+            self.assertEqual(e[0], "lambda")
             self.assertTrue(isinstance(e[1], tuple))
+            self.assertTrue(isinstance(e[2], tuple))
         for atom in definitions_of_one_param:
             e = envd[atom]
-            self.assertEqual(len(e[0][1]), 1)
+            self.assertEqual(len(e[1]), 1)
         for atom in definitions_of_two_params:
             e = envd[atom]
-            self.assertEqual(len(e[0][1]), 2)
+            self.assertEqual(len(e[1]), 2)
         for atom in fixpoints_of_two_params:
             e = envd[atom]
             self.assertEqual(len(e), 3)
