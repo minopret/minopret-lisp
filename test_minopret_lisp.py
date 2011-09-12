@@ -7,6 +7,7 @@ import unittest
 from types import TupleType
 from minopret_lisp import _quote, _atom, _car, _cdr, _cons, _cond, _eq
 from minopret_lisp import _definition, _fixpoint, _load_the_language
+from minopret_lisp import execute_lisp_program
 
 class test_minopret_lisp(unittest.TestCase):
 
@@ -123,6 +124,11 @@ class test_minopret_lisp(unittest.TestCase):
             self.assertEqual(e[2][0], "lambda")
             self.assertEqual(len(e[2][1]), 2)
 
+    def test_a_program(self):
+        e = execute_lisp_program(
+            ("list", ("quote", "a"), ("quote", "b")),
+        )
+        self.assertEqual(e, ("a", "b"))
 
 if __name__ == '__main__':
     unittest.main()
