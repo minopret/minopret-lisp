@@ -130,6 +130,29 @@ class test_minopret_lisp(unittest.TestCase):
         )
         self.assertEqual(e, ("a", "b"))
 
+    def do_not_test_label(self):
+        e = execute_lisp_program((
+            (
+                "label",
+                "map_f_over_l",
+                ("lambda", ("f", "l"), (
+                    "cond",
+                    (("null", "l"), ("quote", ())),
+                    (
+                        ("quote", "t"),
+                        (
+                            "cons",
+                            ("f", ("car", "l")),
+                            ("map_f_over_l", ("cdr", "l")),
+                        ),
+                    ),
+                )),
+            ),
+            ("quote", "atom"),
+            ("quote", (), ("u", "v"), "w"),
+        ))
+        self.assertEqual(e, ("t", (), "t"))
+
 if __name__ == '__main__':
     unittest.main()
 
