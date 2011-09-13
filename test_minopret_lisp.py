@@ -5,47 +5,40 @@
 
 import unittest
 from types import TupleType
-from minopret_lisp import _quote, _atom, _car, _cdr, _cons, _cond, _eq
+from minopret_lisp import atom, car, cdr, cons, eq
 from minopret_lisp import _definition, _fixpoint, _load_the_language
 from minopret_lisp import execute_lisp_program
 
 class test_minopret_lisp(unittest.TestCase):
 
-    def test_quote(self):
-        e = _quote("list")
-        self.assertEqual(e, "list")
-
     def test_atom(self):
-        e = _atom(())
+        e = atom(())
         self.assertEqual(e, "t")
-        e = _atom("list")
+        e = atom("list")
         self.assertEqual(e, "t")
-        e = _atom(("list", "a"))
+        e = atom(("list", "a"))
         self.assertEqual(e, ())
     
     def test_eq(self):
-        e = _eq("a", "a")
+        e = eq("a", "a")
         self.assertEqual(e, "t")
-        e = _eq("a", "b")
+        e = eq("a", "b")
         self.assertEqual(e, ())
-        e = _eq((), ())
+        e = eq((), ())
         self.assertEqual(e, "t")
     
     def test_cons(self):
-        e = _cons("a", ())
+        e = cons("a", ())
         self.assertEqual(e, ("a", ))
     
     def test_car(self):
-        e = _car(("a", "b"))
+        e = car(("a", "b"))
         self.assertEqual(e, "a")
     
     def test_cdr(self):
-        e = _cdr(("a", "b"))
+        e = cdr(("a", "b"))
         self.assertEqual(e, ("b", ))
     
-    def test_cond(self):
-        pass
-        
     def test_definition(self):
         e = _definition(
             (("a", "b"), ("u", "v")),
@@ -130,13 +123,12 @@ class test_minopret_lisp(unittest.TestCase):
         )
         self.assertEqual(e, ("a", "b"))
 
-    def do_not_test_label(self):
+    def test_label(self):
         e = execute_lisp_program((
             (
                 "label",
                 "map_f_over_l",
-                ("lambda", ("f", "l"), (
-                    "cond",
+                ("lambda", ("f", "l"), ("cond", (
                     (("null", "l"), ("quote", ())),
                     (
                         ("quote", "t"),
@@ -146,7 +138,7 @@ class test_minopret_lisp(unittest.TestCase):
                             ("map_f_over_l", ("cdr", "l")),
                         ),
                     ),
-                )),
+                ))),
             ),
             ("quote", "atom"),
             ("quote", (), ("u", "v"), "w"),

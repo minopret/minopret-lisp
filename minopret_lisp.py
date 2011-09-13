@@ -7,46 +7,159 @@
 from types import StringTypes, FunctionType
 
 
-# Primitive functions
+# This first section was largely automatically parsed and reformatted
+# from Lisp. The early evaluation of recursive calls might well fail.
+# This should be modified all over the place, probably by currying,
+# to ensure maximal shortcut evaluation and preferably the ability
+# to use an operation stack and a data stack. I have
+# eliminated Python "cond" in favor of Python "if" statements.
+# Also I'm toying with the idea of object orientation because
+# if we do want to do late binding we could pass the operations
+# to the data rather than vice versa.
 
 
-def _quote(e):
-    return e
+def evlis_ (m, a):
+	result = ()
+	if null_ (m) != "t":
+		result = cons (eval_ (car (m), a), evlis_ (cdr (m), a))
+	return result
 
 
-def _atom(a):
-    if a is () or isinstance(a, StringTypes):
-        return "t"
-    else:
-        return ()
+def evcon_ (c, a):
+	result = ()
+	if eval_ (caar_ (c), a) == "t":
+		result = eval_ (cadar_ (c), a)
+	else:
+		result = evcon_ (cdr (c), a)
+	return result
 
 
-def _eq(a, b):
-    if _atom(a) and _atom(b) and a == b:
-        return "t"
-    else:
-        return ()
+def eval_ (e, a):
+	result = ()
+	if atom (e) == "t":
+		result = assoc_ (e, a)
+	elif atom (car (e)) == "t":
+		if car (e) == "quote":
+			result = cadr_ (e)
+		elif car (e) == "atom":
+			result = atom (eval_ (cadr_ (e), a))
+		elif car (e) == "eq":
+			result = eq (eval_ (cadr_ (e), a), eval_ (caddr_ (e), a))
+		elif car (e) == "car":
+			result = car (eval_ (cadr_ (e), a))
+		elif car (e) == "cdr":
+			result = cdr (eval_ (cadr_ (e), a))
+		elif car (e) == "cons":
+			result = cons (eval_ (cadr_ (e), a), eval_ (caddr_ (e), a))
+		elif car (e) == "cond":
+			result = evcon_ (cdr (e), a)
+		elif car (e) == "assoc":  # don't try to look up the lookup function
+			result = assoc_ (cdr (e), a)
+		else:
+			result = eval_ (cons (assoc_ (car (e), a), cdr (e)), a)
+	elif caar_ (e) == "lambda_":
+		result = eval_ (caddar_ (e), append_ (pair_ (cadar_ (e), evlis_ (cdr (e), a)), a))
+	elif caar_ (e) == "label_":
+		result = eval_ (cons (caddar_ (e), cdr (e)), cons (list_ (cadar_ (e), car (e)), a))
+	return result
 
 
-def _cons(a, b):
-    return ((a, ) + b)
+def assoc_ (x, y):
+	result = ()
+	if eq (caar_ (y), x) == "t":
+		result = cadar_ (y)
+	else:
+		result = assoc_ (x, cdr (y))
+	return result
 
 
-def _car(e):
-    return e[0]
+def pair_ (x, y):
+	result = ()
+	if and_ (null_ (x), null_ (y)) != "t" and and_ (not_ (atom (x)), not_ (atom (y))) == "t":
+		result = cons (list_ (car (x), car (y)), pair_ (cdr (x), cdr (y)))
+	return result
 
 
-def _cdr(e):
-    return e[1:]
+def append_ (x, y):
+	result = ()
+	if null_ (x) == "t":
+		result = y
+	else:
+		result = cons (car (x), append_ (cdr (x), y))
+	return result
 
 
-def _cond(c):
-    result = ()
-    for p in c:
-        if _car(p) == "t":
-            result = _car(_cdr(p))
-            break
-    return result
+def caddar_ (x):
+	return car (cdr (cdr (car (x))))
+
+
+def cadar_ (x):
+	return car (cdr (car (x)))
+
+
+def caar_ (x):
+	return car (car (x))
+
+
+def caddr_ (x):
+	return car (cdr (cdr (x)))
+
+
+def cadr_ (x):
+	return car (cdr (x))
+
+
+def list_ (x, y):
+	return cons (x, cons (y, ()))
+
+
+def not_ (x):
+	result = ()
+	if x != "t":
+		result = "t"
+	return result
+
+
+def and_ (x, y):
+	result = ()
+	if x == "t" and y == "t":
+		result = "t"
+	return result
+
+
+def null_ (x):
+	result = ()
+	if x == ():
+		result = "t"
+	return result
+
+
+
+
+def atom (x):
+	result = ()
+	if x == () or isinstance(x, StringTypes):
+		result = "t"
+	return result
+
+
+def car (x):
+	return x[0]
+
+
+def cdr (x):
+	return x[1:]
+
+
+def cons (x, y):
+	return (x, ) + y
+
+
+def eq (x, y):
+	result = ()
+	if atom (x) == "t" and atom (y) == "t" and x == y:
+		result = "t"
+	return result
 
 
 def _definition(env, name, arg_atom_list, expr):
@@ -66,7 +179,7 @@ def _definition(env, name, arg_atom_list, expr):
     interpreted within the definition of "eval":
         lambda & label
     """
-    return _cons(
+    return cons(
         (name, ("lambda", arg_atom_list, expr)),
         env,
     )
@@ -80,7 +193,7 @@ def _fixpoint(env, name, arg_atom_list, expr):
     See definition of "lambda" within definition of "eval"
     in "_load_the_language".
     """
-    return _cons(
+    return cons(
         (
             name,
             ("label", name, ("lambda", arg_atom_list, expr)),
@@ -522,79 +635,7 @@ def _load_the_language():
     return env
 
 
-# Now to make Lisp programs actually execute in Python!
-# We will do that simply by going over the necessary Lisp code
-# (mostly "eval") and turning it into Python code.
-# We will process the Lisp code by hand, but we could
-# easily imagine processing it automatically, perhaps
-# with a different goal from making Python function calls.
-
-# This is the Lisp function "eval" hand-translated into Python.
-# Because it was simple to inline several of the Lisp functions here,
-# only a few other Lisp functions are represented separately.
-# They are local to _eval just to make clear that they are not used
-# elsewhere.
-def _eval(e, a):
-
-    # This is the Lisp function "assoc" hand-translated into Python.
-    def _assoc(c, a):
-        result = ()
-        for k in a:
-            if k[0] == c:
-                result = k[1]
-                break
-        return result
-
-    # This is the Lisp function "evlis" hand-translated into Python.
-    def _evlis(m, a):
-        return tuple(map(lambda e: _eval(e, a), m))
-
-    # This is the Lisp function "evcon" hand-translated into Python.
-    def _evcon(c, a):
-        result = ()
-        for case in c:
-            if _eval(case[0], a) == "t":
-                result = _eval(case[1], a)
-                break
-        return result
-
-    while (True):  # catch some proper tail calls
-        if _atom(e) == "t":
-            result = _assoc(e, a)
-            break
-        elif _atom(e[0]) == "t":
-            car = e[0]
-            if car == "quote":
-                result = e[1]
-                break
-            elif car == "atom":
-                result = _atom(_eval(e[1], a))
-                break
-            elif car == "eq":
-                result = _eq(_eval(e[1], a), _eval(e[2], a))
-                break
-            elif car == "car":
-                e = e[1][0]
-            elif car == "cdr":
-                e = e[1][1:]
-            elif car == "cons":
-                result = _cons(_eval(e[1], a), _eval(e[2], a))
-                break
-            elif car == "cond":
-                result = _evcon(e[1:], a)
-                break
-            else:
-                e = _cons(_assoc(car, a), e[1:])
-        elif e[0][0] == "lambda":
-            a = tuple(zip(e[0][1], _evlis(e[1:], a))) + a
-            e = e[0][2]
-        elif e[0][0] == "label":
-            a = ((e[0][1], e[0]), a)
-            e = (e[0][2], ) + e[1:]
-    return result
-
-
 def execute_lisp_program(e):
     env = _load_the_language()
-    return _eval(e, env)
+    return eval_(e, env)
 
