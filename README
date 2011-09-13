@@ -9,6 +9,18 @@ how an elementary Lisp runtime works. Based on this
 Lisp implementations) I expect that others and I will
 be able to produce and enhance a Lisp within any existing
 runtime system.
+
+Many Lisp implementations consist of a
+"read-eval-print loop".
+We're going to let Python do the "read" and "print"
+parts and we're not going to loop.
+There's nothing here but "eval".
+That will be quite enough to occupy our attention.
+
+I have no illusions that this will break any speed records.
+That's totally beside the point. Once I check that this works,
+I may be able to apply my formal logic skills (even Coq) to
+provide certifiably correct optimizations.
  
 This closely follows Paul Graham's representation
 in "The Roots of Lisp" of John McCarthy's 1960 paper
@@ -26,16 +38,3 @@ Thanks to William F. Dowling for reminding me,
 when I mentioned that I had written the "cond" builtin
 such that it consumed and returned its environment,
 that "cond" is a pure function. Oh, whoops.
-
-Many Lisp implementations consist of a
-"read-eval-print loop".
-We're going to let Python do the "read" and "print"
-parts and we're not going to loop.
-There's nothing here but "eval".
-That will be quite enough to occupy our attention.
-
-I have no illusions that this will break any speed records.
-That's totally beside the point. In fact,
-once I check that this works, I should be able to apply
-my formal logic skills (even Coq) to provide certifiably
-correct optimizations.

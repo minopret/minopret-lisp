@@ -1,44 +1,7 @@
 #!/usr/bin/python
 
-# A Lisp in the manner of John McCarthy (1960).
+# A Lisp in the manner of John McCarthy (1960) as described by Paul Graham.
 # Created: "minopret" (Aaron Mansheim), 2011-09-06 to 2011-09-11
-#
-# I hope this makes clear to anyone who reads it
-# how an elementary Lisp runtime works. Based on this
-# (or any of what I suppose must be many other tutorial
-# Lisp implementations) I expect that others and I will
-# be able to produce and enhance a Lisp within any existing
-# runtime system.
-# 
-# This closely follows Paul Graham's representation
-# in "The Roots of Lisp" of John McCarthy's 1960 paper
-# "Recursive Functions of Symbolic Expressions and Their
-# Computation by Machine, Part I" (of which no other part
-# was published). "The Roots of Lisp" mentions that
-# major inconveniences of 1960 Lisp are mostly resolved
-# in MIT AI Memo No. 453 "The Art of the Interpreter"
-# which may be located via the Computer History Museum:
-# <http://www.softwarepreservation.org/projects/LISP/scheme_family/>
-# The McCarthy paper may be located similarly:
-# <http://www.softwarepreservation.org/projects/LISP/lisp15_family/>
-
-# Thanks to William F. Dowling for reminding me,
-# when I mentioned that I had written the "cond" builtin
-# such that it consumed and returned its environment,
-# that "cond" is a pure function. Oh, whoops.
-
-# Many Lisp implementations consist of a
-# "read-eval-print loop".
-# We're going to let Python do the "read" and "print"
-# parts and we're not going to loop.
-# There's nothing here but "eval".
-# That will be quite enough to occupy our attention.
-
-# I have no illusions that this will break any speed records.
-# That's totally beside the point. In fact,
-# once I check that this works, I should be able to apply
-# my formal logic skills (even Coq) to provide certifiably
-# correct optimizations.
 
 
 from types import StringTypes, FunctionType
@@ -144,7 +107,7 @@ def _load_the_language():
     DATA = "quote"
     IS_ATOM = "atom"
     IS_EQ = "eq"
-    UNSHIFT = "cons"
+    PUSH = "cons"
     FIRST = "car"
     REST = "cdr"
     MATCH = "cond"
@@ -200,12 +163,12 @@ def _load_the_language():
     # Given two expressions, construct a list
     # that has them as its two elements.
     env = _definition(env, List, ("x", "y"), (
-        UNSHIFT,
+        PUSH,
         "x",
-        (UNSHIFT, "y", (DATA, ()), ),
+        (PUSH, "y", (DATA, ()), ),
     ))
     
-    # A few of the ways to use FIRST and REST together
+    # A few of the ways we'll use FIRST and REST together
     env = _definition(env, Second, ("x", ), (FIRST, (REST, "x")), )
     env = _definition(env, Third, ("x", ), (FIRST, (REST, (REST, "x"))), )
     env = _definition(env, FirstOfFirst, ("x", ), (FIRST, (FIRST, "x")), )
@@ -237,7 +200,7 @@ def _load_the_language():
         (
             (DATA, "t"),
             (
-                UNSHIFT,
+                PUSH,
                 (FIRST, "x"),
                 ("append", (REST, "x"), "y"),
             ),
@@ -255,7 +218,7 @@ def _load_the_language():
         (
             (And, (Not, (IS_ATOM, "x")), (Not, (IS_ATOM, "y")), ),
             (
-                UNSHIFT,
+                PUSH,
                 (List, (FIRST, "x"), (FIRST, "y")),
                 ("pair", (REST, "x"), (REST, "y")),
             ),
@@ -350,9 +313,9 @@ def _load_the_language():
                     # An application of "cons" evaluates to
                     # the result of applying "cons" to
                     # the evaluted first and second arguments.
-                    (IS_EQ, (FIRST, "e"), (DATA, UNSHIFT)),
+                    (IS_EQ, (FIRST, "e"), (DATA, PUSH)),
                     (
-                        UNSHIFT,
+                        PUSH,
                         ("eval", (Second, "e"), "a"),
                         ("eval", (Third, "e"), "a"),
                     ),
@@ -371,7 +334,7 @@ def _load_the_language():
                     (DATA, "t"),
                     (
                         "eval",
-                        (UNSHIFT, ("assoc", (FIRST, "e"), "a"), (REST, "e"), ),
+                        (PUSH, ("assoc", (FIRST, "e"), "a"), (REST, "e"), ),
                         "a",
                     ),
                 ),
@@ -511,12 +474,12 @@ def _load_the_language():
             (
                 "eval",
                 (
-                    UNSHIFT,
+                    PUSH,
                     (ThirdOfFirst, "e"),
                     (REST, "e"),
                 ),
                 (
-                    UNSHIFT,
+                    PUSH,
                     (List, (SecondOfFirst, "e"), (FIRST, "e"), ),
                     "a",
                 ),
@@ -549,7 +512,7 @@ def _load_the_language():
         (
             (DATA, "t"),
             (
-                UNSHIFT,
+                PUSH,
                 ("eval", (FIRST, "m"), "a"),
                 ("evlis", (REST, "m"), "a"),
             ),
@@ -601,10 +564,6 @@ def _eval(e, a):
             break
         elif _atom(e[0]) == "t":
             car = e[0]
-            # It's possible to replace these seven cases
-            # by placing the function objects in the
-            # environment, then testing for a car of
-            # FunctionType.
             if car == "quote":
                 result = e[1]
                 break
