@@ -57,9 +57,9 @@ def eval_ (e, a):
 			result = assoc_ (cdr (e), a)
 		else:
 			result = eval_ (cons (assoc_ (car (e), a), cdr (e)), a)
-	elif caar_ (e) == "lambda_":
+	elif caar_ (e) == "lambda":
 		result = eval_ (caddar_ (e), append_ (pair_ (cadar_ (e), evlis_ (cdr (e), a)), a))
-	elif caar_ (e) == "label_":
+	elif caar_ (e) == "label":
 		result = eval_ (cons (caddar_ (e), cdr (e)), cons (list_ (cadar_ (e), car (e)), a))
 	return result
 
