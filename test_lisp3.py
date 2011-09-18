@@ -16,11 +16,8 @@ print List( Symbol("cdr"), List(
 #                                            cdr: (nil)
 print Symbol("cdr").cons_( List(
     Symbol("quote").cons_( List(
-        Symbol("atom").cons_( Symbol("lambda").cons_(
-            List.nil,
-        ),),
-        List.nil,
-    ),),
-    List.nil,
+        Symbol("atom").cons_( Symbol("lambda").cons_( List.nil,
+        ),), List.nil,
+    ),), List.nil,
 ),).eval_([])
 
