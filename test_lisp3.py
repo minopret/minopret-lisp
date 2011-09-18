@@ -15,9 +15,9 @@ print List(Symbol("cdr"), List(
 #      cdr: (nil) cdr: list> car: list> car: "atom"
 #                            cdr: (nil) cdr: car: "lambda"
 #                                            cdr: (nil)
-print   Symbol("cdr").cons( List(
-          Symbol("quote").cons( List(
-            Symbol("atom").cons(Symbol("lambda").cons(List.nil)),
+print   Symbol("cdr").cons_( List(
+          Symbol("quote").cons_( List(
+            Symbol("atom").cons_(Symbol("lambda").cons_(List.nil)),
             List.nil
           )),
           List.nil
