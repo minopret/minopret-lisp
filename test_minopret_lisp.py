@@ -39,15 +39,15 @@ class test_minopret_lisp(unittest.TestCase):
         e = cdr(("a", "b"))
         self.assertEqual(e, ("b", ))
 
-    def test_evcon(self):
+    def do_not_test_evcon(self):
         env = _load_the_language()
         e = evcon_( ((("quote", "a"), ("quote", "a")), (("quote", "t"), ("quote", "it is t"))), env)
         self.assertEqual(e, "it is t")
         env1 = append_(
-            (('f', 'atom'), ('l', (("j"), ('u', 'v'), 'w')), ('map_f_over_l', ('label', 'map_f_over_l', ('lambda', ('f', 'l'), ('cond', ((('null', 'l'), ('quote', ())), (('quote', 't'), ('cons', ('f', ('car', 'l')), ('map_f_over_l', ('cdr', 'l')))))))))),
+            (('f', 'atom'), ('l', (("j"), ('u', 'v'), 'w')), ('map_f_over_l', ('label', 'map_f_over_l', ('lambda', ('f', 'l'), ('cond', ((("trace", ('null', 'l')), ('quote', ())), (('quote', 't'), ('cons', ('f', ('car', 'l')), ("trace", ('map_f_over_l', 'f', ('cdr', 'l'))))))))))),
             env,
         )
-        e = evcon_( ((('null', 'l'), ('quote', ())), (('quote', 't'), ('cons', ('f', ('car', 'l')), ('map_f_over_l', ('cdr', 'l'))))), env1)
+        e = evcon_( ((('null', 'l'), ('quote', ())), (('quote', 't'), ('cons', ('f', ('car', 'l')), ('map_f_over_l', 'f', ('cdr', 'l'))))), env1)
         self.assertEqual(e, ("t", (), "t"))
 
 
@@ -136,7 +136,7 @@ class test_minopret_lisp(unittest.TestCase):
         )
         self.assertEqual(e, ("a", "b"))
 
-    def do_not_test_label(self):
+    def test_label(self):
         e = execute_lisp_program((
             (
                 "label",
@@ -148,7 +148,7 @@ class test_minopret_lisp(unittest.TestCase):
                         (
                             "cons",
                             ("f", ("car", "l")),
-                            ("map_f_over_l", ("cdr", "l")),
+                            ("map_f_over_l", "f", ("cdr", "l")),
                         ),
                     ),
                 ))),
