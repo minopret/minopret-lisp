@@ -53,8 +53,10 @@ def eval_ (e, a):
 			result = cons (eval_ (cadr_ (e), a), eval_ (caddr_ (e), a))
 		elif car (e) == "cond":
 			result = evcon_ (cdr (e), a)
-		elif car (e) == "assoc":  # don't try to look up the lookup function
+		elif car (e) == "assoc":  # not a builtin, but don't try to look up the lookup function
 			result = assoc_ (cdr (e), a)
+		elif car (e) == "trace":  # an added special form
+			result = eval_ (trace(e, a))
 		else:
 			result = eval_ (cons (assoc_ (car (e), a), cdr (e)), a)
 	elif caar_ (e) == "lambda":
@@ -63,6 +65,11 @@ def eval_ (e, a):
 		result = eval_ (cons (caddar_ (e), cdr (e)), cons (list_ (cadar_ (e), car (e)), a))
 	return result
 
+
+def trace(e, a):
+	print 'trace (' + e + ";"
+	print "\t" + a[0:3] + " ... )"
+	return e
 
 def assoc_ (x, y):
 	result = ()
