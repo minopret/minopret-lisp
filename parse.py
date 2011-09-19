@@ -46,7 +46,7 @@ def atom_id(s):
 	else:
 		#return '[' + s + ']'
 		d = atom_num(s)
-		h = list(hex(d))[2:]
+		h = list(hex(d).upper())[2:]
 		if h[-1] == 'L':
 			h = h[0:-1]
 		h.reverse()
@@ -54,7 +54,7 @@ def atom_id(s):
 		h = h[0:-1]
 		nh = len(h)
 		h = ' (d'.join(h)
-		h += ' h' + hn + (')' * nh)
+		h += ' h' + hn.upper() + (')' * nh)
 		#print h
 		s = "symbol (d"
 		s += h
@@ -97,18 +97,22 @@ tokens = mnplisp.split()  # tokenize on whitespace (acknowledgment: Peter Norvig
 expr = []
 stack = [expr,]
 
+def add_quoted_token(tok):
+	begin_list(quoted = False)
+	add_token("quote")
+	add_token(tok[1:])
+	end_list()
+
 def add_token(tok):
 	stack[-1].append(tok)
 
 def begin_list(quoted = False):
 	new_list = []
 	if quoted == True:
-		new_list.append("quote")
-		newer_list = []
-		new_list.append(newer_list)
 		stack[-1].append(new_list)
 		stack.append(new_list)
-		new_list = newer_list
+		add_token("quote")
+		new_list = []
 	stack[-1].append(new_list)
 	stack.append(new_list)
 	
@@ -124,8 +128,15 @@ for t in tokens:
 		end_list()
 	elif t == "'(":
 		begin_list(quoted = True)
+	elif t[0:1] == "'":
+		add_quoted_token(t)
 	else:
 		add_token(t)
+
+def for_debug():
+	for sexpr in stack[0]:
+		print sexpr
+		print
 
 def for_python():
 	for sexpr in stack[0]:
