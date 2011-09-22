@@ -214,7 +214,7 @@ class LispParser():
 
 
 #f = open("lisp3.lisp", "r")
-print "Press Ctrl-D when finished> ",
+print "Press Ctrl-D on a new line when finished> ",
 stdout.flush()
 mnplisp = stdin.read()
 #f.close()
