@@ -1,4 +1,8 @@
-# Transformation of Paul Graham's Lisp
+# This is called "lisp3" because it takes me
+# about three really good tries to get it
+# right.
+#
+# It's a transformation of Paul Graham's Lisp
 # by rewriting it in Python, eliminating cond
 # and using object orientation mostly to help
 # get a valid order of evaluation,
@@ -12,6 +16,7 @@ class LispError(Exception):
 
 # Abstract base class
 class Expr():
+
     # Primitives
     def atom_(self):
         raise NotImplementedError()
@@ -46,6 +51,9 @@ class Expr():
         
     def null_(self):
         return List.nil
+        
+    def eval_(self, e):
+        raise NotImplementedError()
 
 
 class Symbol(Expr):
@@ -90,6 +98,7 @@ class Symbol(Expr):
 
     def __str__(self):
         return self.data
+
 
 # Distinguished instances of Symbol
 Symbol.s_t = Symbol("t")
@@ -177,7 +186,7 @@ class List(Expr):
             print "eval " + str(self) + " where " + str(a) + "."
         if self.atom_() == Symbol.s_t:
             return self.assoc_(a)
-        elif self.car_().atom_():
+        elif self.car_().atom_() == Symbol.s_t:
             if self.car_().eq_(Symbol.s_quote) == Symbol.s_t:
                 return self.cadr_()
             elif self.car_().eq_(Symbol.s_atom) == Symbol.s_t:
@@ -185,7 +194,7 @@ class List(Expr):
             elif self.car_().eq_(Symbol.s_eq) == Symbol.s_t:
                 return self.cadr_().eval_(a).eq_(self.caddr_().eval_(a))
             elif self.car_().eq_(Symbol.s_car) == Symbol.s_t:
-                return self.cadr_().eval_(a).car()
+                return self.cadr_().eval_(a).car_()
             elif self.car_().eq_(Symbol.s_cdr) == Symbol.s_t:
                 return self.cadr_().eval_(a).cdr_()
             elif self.car_().eq_(Symbol.s_cons) == Symbol.s_t:
