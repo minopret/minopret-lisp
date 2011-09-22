@@ -1,6 +1,10 @@
 #!/usr/bin/python
 
 # A Lisp in the manner of John McCarthy (1960) as described by Paul Graham.
+# I doubt this one works very well. See lisp3.py for a better bet.
+# This one has a couple of merits though:
+# 1. It shows a lot of what I want to accomplish in coding a Lisp.
+# 2. It's the origin of "minopret.lisp".
 # Created: "minopret" (Aaron Mansheim), 2011-09-06 to 2011-09-11
 
 
