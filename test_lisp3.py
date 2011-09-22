@@ -23,8 +23,10 @@ print Symbol("cdr").cons_( List(
 
 # Same thing constructed one more way.
 print Symbol("cdr").cons_(
-    Symbol("quote").cons_(
-        Symbol("atom").cons_(Symbol("lambda").cons_(List.nil)
-    ).cons_(List.nil)
-).cons_(List.nil).eval_([])
+        Symbol("quote").cons_(
+	    Symbol("atom").cons_(
+		Symbol("lambda").cons_(List.nil)
+	    ).cons_(List.nil)
+	).cons_(List.nil)
+).eval_([])
 
