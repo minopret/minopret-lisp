@@ -1,10 +1,11 @@
-# This is called "parse3" because it takes about three
-# really good tries to get it right.
+# This is called "parse3" because it takes me
+# about three really good tries to get it right.
 #
 # Aaron Mansheim, 2011-09-22
 
 from re import sub, M
-from lisp3 import 
+from types import StringTypes
+from lisp3 import List, Symbol
 
 
 # Parses a sequence of Lisp s-expressions.
@@ -69,4 +70,16 @@ def wrinkle(tokens):
             r = t
         p += 1
     return (r, p)
+
+def list_to_lisp3(x):
+    if isinstance(x, StringTypes):
+        if x in Symbol.prims:
+            return Symbol.prims[x]
+        else:
+            return Symbol(x)
+    elif isinstance(x, tuple) or isinstance(x, list):
+        if len(x) <= 0:
+            return List.nil
+        else:
+            return list_to_lisp3(x[0]).cons_(list_to_lisp3(x[1:]))
 
