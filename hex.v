@@ -1,6 +1,7 @@
 (* Keep this in your back pocket:
    Coq fully enables us to define equality rather than use the
-   equality built in. However, the tactics are written to use the
+   equality built in. However, redefining equality is a bit
+   inconvenient. The rewrite tactics are written to use the
    built-in equality.
 
 Inductive eq {X: Type} (a : X) : X -> Prop :=
@@ -217,45 +218,17 @@ Definition is_classifier {X: Type} (c : X -> X) (e : X -> X -> Prop) : Prop
     equivalence_relation e ->
     forall x : X,  ( e x (c x) /\ forall (y : X), e x y -> (e y (c x)) ).
 
+Definition is_homomorphism {X Y: Type} (f : X -> Y)
+  (eX : X -> X -> Prop) (eY : Y -> Y -> Prop) : Prop :=
+forall (cX : X -> X) (cY : Y -> Y),
+  is_classifier cX eX -> is_classifier cY eY ->
+  forall (x1 x2 : X), cX x1 = cX x2 -> cY (f x1) = cY (f x2).
+
+(* I think I'm haven't quite achieved the right statement of this one. *)
 Theorem equiv_functionality : forall (X Y: Type)
   (eX : X -> X -> Prop) (cX : X -> X)
   (f : X -> Y) (u v : X),
-equivalence_relation eX -> is_classifier cX eX ->
-eX v (cX u) -> cX v = cX u.
-Proof. intros X Y eX cX eY f u v HeX HcX HeY H.
-inversion HeX as [HrX HstX]. inversion HeY as [HrY HstY].
-inversion HstX as [HsX HtX]. inversion HstY as [HsY HtY].
-unfold reflexive in HrX. unfold reflexive in HrY.
-unfold symmetric in HsX. unfold symmetric in HsY.
-unfold transitive in HtX. unfold transitive in HtY.
-unfold is_classifier in HcX.
-assert (Kuy: eX u (cX u) /\ forall y : X, eX u y -> eX y (cX u)).
-(* Proof of assertion *) apply (HcX HeX u).
-inversion Kuy as [Ku Ky].
-assert (Kuu: eX u u). apply HrX.
-assert (Kuv: eX u v). apply HsX in H. apply (HtX u (cX u) v Ku H).
-assert (Kvu: eX v (cX u)). apply (Ky v Kuv).
-
-
-eY (f v) (f (xX u))              (* HcX eX HeX u _(eX u (cX u))_ v (eX u v)
-
-HcX: forall e : X -> X -> Prop,  (* eX *)
-  equivalence_relation e ->      (* HeX *)
-  forall x : X,                  (* u *)
-  e x (cX x) ->                  (* eX u (cX u) by construction? *)
-  forall y : X,                  (* v *)
-  e x y ->                       (* eX u v, because
-                                    HrX -> eX u u
-
-                                    eX u (cX u) above
-
-                                    H : eX v (cX u)
-                                    eX (cX u) v by HsX
-                                    eX u v by HtX
-                                 *)
-  e y (cX x)                     (* conclusion of hypothesis HcX *)
-  
-
+is_classifier cX eX -> eX v (cX u) -> cX v = cX u.
 
 (* My favorite big hammer to wield *)
 Theorem functionality : forall (X Y : Type) (f : X -> Y) (u v : X),
