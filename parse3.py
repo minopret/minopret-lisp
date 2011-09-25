@@ -3,10 +3,6 @@
 #
 # Aaron Mansheim, 2011-09-22
 
-from re import sub, M
-from types import StringTypes
-from lisp3 import List, Symbol
-
 
 # Parses a sequence of Lisp s-expressions.
 # More-or-less follows Peter Norvig's in his lis.py.
@@ -22,6 +18,8 @@ def string_to_list(s):
     return tuple(r)
  
 def tokenize(s):
+    from re import sub, M
+    
     # Strip off end-of-line comments
     s = sub('\s*;.*', '', s, 0, flags=M)
     
@@ -50,7 +48,7 @@ def wrinkle(tokens):
             p += q
             r += (s, )
             
-        if tokens[p] == ')':
+        if p < len(tokens):  # and therefore tokens[p] == ')'
             p += 1
             if t == "'(":
                 r = ('quote', r)
@@ -71,15 +69,7 @@ def wrinkle(tokens):
         p += 1
     return (r, p)
 
-def list_to_lisp3(x):
-    if isinstance(x, StringTypes):
-        if x in Symbol.prims:
-            return Symbol.prims[x]
-        else:
-            return Symbol(x)
-    elif isinstance(x, tuple) or isinstance(x, list):
-        if len(x) <= 0:
-            return List.nil
-        else:
-            return list_to_lisp3(x[0]).cons_(list_to_lisp3(x[1:]))
+def read_exprs(prompt='Press Ctrl-D on a new line to exit> '):
+    prog = raw_input(prompt)
+    return string_to_list(prog)
 
