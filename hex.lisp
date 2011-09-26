@@ -200,6 +200,22 @@
 
 ; tests
 
-(bal3_neg '(- + + - 0 0 0 - + + -))  ; works
+(label equal (lambda (x y) (cond
+    ((atom x) (cond ((and (atom y) (eq x y)) t) (t ())))
+    (t (cond ((atom y) ())
+             (t (and (equal (car x) (car y)) (equal (cdr x) (cdr y)))) )) )))
+
+(equal (bal3_neg '(- + + - 0 0 0 - + + -))
+      '(+ - - + 0 0 0 + - - +))
+; (trit_add- '- '-) (trit_add- '- '0) (trit_add- '- '+) ; works
+; (trit_add- '0 '-) (trit_add- '0 '0) (trit_add- '0 '+) ; works
+; (trit_add- '+ '-) (trit_add- '+ '0) (trit_add- '+ '+) ; works
+; (trit_add  '- '-) (trit_add  '- '0) (trit_add  '- '+) ; works
+; (trit_add  '0 '-) (trit_add  '0 '0) (trit_add  '0 '+) ; works
+; (trit_add  '+ '-) (trit_add  '+ '0) (trit_add  '+ '+) ; works
+; (trit_add+ '- '-) (trit_add+ '- '0) (trit_add+ '- '+) ; works
+; (trit_add+ '0 '-) (trit_add+ '0 '0) (trit_add+ '0 '+) ; works
+; (trit_add+ '+ '-) (trit_add+ '+ '0) (trit_add+ '+ '+) ; works
+
 
 ;(bal3_add '(+ - - 0) '(+ 0 - -))   ; doesn't work
