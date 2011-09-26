@@ -6,7 +6,7 @@
 
 # Parses a sequence of Lisp s-expressions.
 # More-or-less follows Peter Norvig's in his lis.py.
-def string_to_list(s):
+def string_to_tuple(s):
     tokens = tokenize(s)
     
     r = []
@@ -25,7 +25,7 @@ def tokenize(s):
     
     s = s.replace('(', '( ')
     s = s.replace(')', ' )')
-    return s.split()
+    return tuple(s.split())
 
 def wrinkle(tokens):
     """Returns first symbol or sublist and the number of tokens read."""
@@ -41,17 +41,17 @@ def wrinkle(tokens):
     
     if t == '(' or t == "'(":
         p += 1
-        r = ()
+        r = []
         
         while p < len(tokens) and tokens[p] != ')':
             (s, q) = wrinkle(tokens[p:])
             p += q
-            r += (s, )
+            r += [s, ]
             
         if p < len(tokens):  # and therefore tokens[p] == ')'
             p += 1
             if t == "'(":
-                r = ('quote', r)
+                r = ('quote', tuple(r))
         else:
             raise SyntaxError('Missing right paren')
     elif t == ')':
@@ -67,6 +67,8 @@ def wrinkle(tokens):
         else:
             r = t
         p += 1
+    if isinstance(r, list):
+        r = tuple(r)
     return (r, p)
 
 def read_exprs(prompt='Press Ctrl-D on a new line to exit> '):
