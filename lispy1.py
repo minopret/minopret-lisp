@@ -4,7 +4,7 @@
 # Aaron Mansheim, 2011-09-24
 
 # TODO make this a command-line option
-trace = True
+trace = False
 
 # sugar
 Symbol = str
