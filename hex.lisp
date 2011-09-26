@@ -12,6 +12,15 @@
 
 
 
+; Put this in a standard library
+
+(label equal (lambda (x y) (cond
+    ((atom x) (cond ((and (atom y) (eq x y)) t) (t ())))
+    (t (cond ((atom y) ())
+             (t (and (equal (car x) (car y)) (equal (cdr x) (cdr y)))) )) )))
+
+
+
 ; hex_mult_3: This would assist computing a ternary digit value
 ; a_i*3^i in hex. Using this table, it's easy: 1 3 9 1B 51 F3 2D9 88B 19A1 ...
 ; Just requires the ability to carry lead digits 0, 1, & 2 from this table.
@@ -75,17 +84,9 @@
 
 
 
-
-; Do I need this?
-; cdadr: tail of second element
-
-(label cdadr (lambda (x) (cdr (car (cdr x)))))
-
-
-
 ; So, balanced-ternary addition. Right.
 
-; Add, respecting a negative carry digit.
+; Add balanced-ternary digits, respecting a negative carry digit.
 
 (label trit_add- (lambda (x y) (cond (     (eq x '+)  (list '0 y))
                                      (     (eq y '+)  (list '0 x))
@@ -99,7 +100,7 @@
                                     (     (eq x '-) '(- +))
                                     (            t  '(+ -)) )))
 
-; Add, respecting a positive carry digit.
+; Add balanced-ternary digits, respecting a positive carry digit.
 
 (label trit_add+ (lambda (x y) (cond (     (eq x '-)  (list '0 y))
                                      (     (eq y '-)  (list '0 x))
@@ -107,14 +108,57 @@
                                      (     (eq x '0) '(0 +))
                                      (            t  '(+ 0)) )))
 
-; Quick sketch of full balanced-ternary addition.
-; "lsd" : least significant digit; "rds" : remaining digits
-; x + y = (if carry?(rds(x), rds(y)) then rds(x) carrying+ rds(y) else rds(x) + rds(y) )
+(label trit_add_carrying (lambda (x y c) (cond
+    ((eq c '0) (trit_add  x y))
+    ((eq c '+) (trit_add+ x y))
+    (       t  (trit_add- x y))
+)))
 
-; Entry point for balanced-ternary addition.
+; nonce functions
+(label list_car_cdr (lambda (x) (list (car x) (cdr x))))
+(label suffix_cadr (lambda (x y) (list (car x) (append (cadr x) y) )))
+;unused I think:
+;;(label list_cdr_car (lambda (x) (list (cdr x) (car x))))
+;;(label suffix_car (lambda (x y) (cons (append (car y) x) (cdr y))))
 
-(label bal3_add (lambda (x y) (bal3_add_carrying x y '() '())))
+; params:   x: left addend, a trit
+;           y: right addend, a trit
+;           c: carry digit, a trit
+;           s: sum of less significant digits without carry, a bal3
+; return: car: new carry digit, a trit
+;        cadr: new sum without carry, a bal3
+(label bal3_trit_add (lambda (x y c s)
+    (suffix_cadr s (list_car_cdr (trit_add_carrying x y c))) ))
 
+;; Work in progress
+; Wow, this could end up slower than the Ackermann function.
+; I hope I can revise it for reasonable speed.
+;
+; params:  yr: reversed higher digits for y, initially ()
+;          xr: reversed higher digits for x, initially ()
+;           x: left addend, a bal3
+;           y: right addend, a bal3
+;           c: carry digit, a trit
+;           s: old sum with carry, a bal3
+; return: car: carry digit, a trit
+;        cadr: new sum without carry, a bal3
+;;(label bal3_add_carrying (lambda (yr xr x y c s) (cond
+;;    ((null (cdr x)) (cond
+;;        ((null (cdr y)) ...(bal3_trit_add (car x) (car y) c s)...)
+;;        (            t  ......
+
+
+;; Reasons why bal3_add, bal3_acc, etc. are to be removed
+;(bal3_add '(+ - - 0) '(+ 0 - -))   ; doesn't work
+;(bal3_add '(0) '(-))   ; doesn't work
+; (bal3_acc '(0 - - +) '(- - 0 +) '0 '()) ; doesn't work sensibly
+; ==> (('-', '-', '+'), ('-', '0', '+'), '0', ('-',))
+; (equal (bal3_acc '(0 - - +) '(- - 0 +) '0 '()) '(+ (-)))
+
+;; To be removed
+;;(label bal3_add (lambda (x y) (bal3_add_carrying x y '() '())))
+
+;; To be removed
 ; Loop for balanced-ternary addition.
 ;
 ; params: x: least significant digits of left addend
@@ -125,20 +169,21 @@
 ;         cadr: list of computed least significant digits
 ;         cddr: null
 
-(label bal3_add_carrying (lambda (x y msxr msyr) (cond
-  ((null (cdr x)) (cond ( (null (cdr y))
-                          (bal3_acc (cons (car x) msxr)
-                                    (cons (car y) msyr) '0 ()) )
-                        (  t
-                          (bal3_add_carrying x (cdr y)
-                             msxr (cons (car y) msyr))) ))
-              (t  (cond ( (null (cdr y))
-                          (bal3_add_carrying (cdr x) y
-                            (cons (car x) msxr) msyr) )
-                        (  t
-                          (bal3_add_carrying (cdr x) (cdr y)
-                            (cons (car x) msxr) (cons (car y) msyr) ) ) )) )))
+;;(label bal3_add_carrying (lambda (x y msxr msyr) (cond
+;;  ((null (cdr x)) (cond ( (null (cdr y))
+;;                          (bal3_acc (cons (car x) msxr)
+;;                                    (cons (car y) msyr) '0 ()) )
+;;                        (  t
+;;                          (bal3_add_carrying x (cdr y)
+;;                             msxr (cons (car y) msyr))) ))
+;;              (t  (cond ( (null (cdr y))
+;;                          (bal3_add_carrying (cdr x) y
+;;                            (cons (car x) msxr) msyr) )
+;;                        (  t
+;;                          (bal3_add_carrying (cdr x) (cdr y)
+;;                            (cons (car x) msxr) (cons (car y) msyr) ) ) )) )))
 
+;; To be removed
 ; Technical function to add the next leftward pair of digits in balanced ternary addition.
 ;
 ; params: xr: leftward digits of left addend, listed from least to most significant;
@@ -149,16 +194,17 @@
 ; returns: car: the next carry digit (0 or +);
 ;          cdr: new sum: the next sum digit for x & y, prepended to s
 
-(label bal3_acc (lambda (xr yr c s) (cond
-  ((null xr) (cond ((null yr) (list c s))
-                   ((eq c '0) (bal3_acc xr (cdr yr) '0 (cons (car yr) s)))
-                   (       t  (bal3_acc '(+) (cdr yr) '0 s)) ))
-  (       t  (cond ((null yr) (bal3_acc xr (cons c ()) '0 s))
-                   (       t  (bal3_regroup (cdr xr) (cdr yr)
-                                            (cond ((eq c '0) (trit_add  (car xr) (car yr)))
-                                                  (       t  (trit_add+ (car xr) (car yr))) )
-                                             s)) )) )))
+;;(label bal3_acc (lambda (xr yr c s) (cond
+;;  ((null xr) (cond ((null yr) (list c s))
+;;                   ((eq c '0) (bal3_acc xr (cdr yr) '0 (cons (car yr) s)))
+;;                   (       t  (bal3_acc '(+) (cdr yr) '0 s)) ))
+;;  (       t  (cond ((null yr) (bal3_acc xr (cons c ()) '0 s))
+;;                   (       t  (bal3_regroup (cdr xr) (cdr yr)
+;;                                            (cond ((eq c '0) (trit_add  (car xr) (car yr)))
+;;                                                  (       t  (trit_add+ (car xr) (car yr))) )
+;;                                             s)) )) )))
 
+;; To be removed
 ; Technical function to assist carrying in balanced ternary addition.
 ;  params:  xr: reversed remaining more significant digits of left addend
 ;           yr: reversed remaining more significant digits of right addend,
@@ -169,8 +215,8 @@
 ;         cadr: yr (unchanged)
 ;        caddr: carry digit (0 or 1);
 ;        cdddr: prepend non-carry digits to the previous sum
-(label bal3_regroup (lambda (xr yr cs1 s0)
-  (append (list xr yr) (list (car cs1) (append (cdr cs1) s0))) ))
+;;(label bal3_regroup (lambda (xr yr cs1 s0)
+;;  (append (list xr yr) (list (car cs1) (append (cdr cs1) s0))) ))
 
 
 
@@ -198,24 +244,36 @@
 
 
 
-; tests
-
-(label equal (lambda (x y) (cond
-    ((atom x) (cond ((and (atom y) (eq x y)) t) (t ())))
-    (t (cond ((atom y) ())
-             (t (and (equal (car x) (car y)) (equal (cdr x) (cdr y)))) )) )))
+; automatic unit tests
 
 (equal (bal3_neg '(- + + - 0 0 0 - + + -))
-      '(+ - - + 0 0 0 + - - +))
-; (trit_add- '- '-) (trit_add- '- '0) (trit_add- '- '+) ; works
-; (trit_add- '0 '-) (trit_add- '0 '0) (trit_add- '0 '+) ; works
-; (trit_add- '+ '-) (trit_add- '+ '0) (trit_add- '+ '+) ; works
-; (trit_add  '- '-) (trit_add  '- '0) (trit_add  '- '+) ; works
-; (trit_add  '0 '-) (trit_add  '0 '0) (trit_add  '0 '+) ; works
-; (trit_add  '+ '-) (trit_add  '+ '0) (trit_add  '+ '+) ; works
-; (trit_add+ '- '-) (trit_add+ '- '0) (trit_add+ '- '+) ; works
-; (trit_add+ '0 '-) (trit_add+ '0 '0) (trit_add+ '0 '+) ; works
-; (trit_add+ '+ '-) (trit_add+ '+ '0) (trit_add+ '+ '+) ; works
+                 '(+ - - + 0 0 0 + - - +))
+(equal (trit_add- '- '-) '(- 0))
+(equal (trit_add- '- '0) '(- +))
+(equal (trit_add- '- '+) '(0 -))
+(equal (trit_add- '0 '-) '(- +))
+(equal (trit_add- '0 '0) '(0 -))
+(equal (trit_add- '0 '+) '(0 0))
+(equal (trit_add- '+ '-) '(0 -))
+(equal (trit_add- '+ '0) '(0 0))
+(equal (trit_add- '+ '+) '(0 +))
+(equal (trit_add  '- '-) '(- +))
+(equal (trit_add  '- '0) '(0 -))
+(equal (trit_add  '- '+) '(0 0))
+(equal (trit_add  '0 '-) '(0 -))
+(equal (trit_add  '0 '0) '(0 0))
+(equal (trit_add  '0 '+) '(0 +))
+(equal (trit_add  '+ '-) '(0 0))
+(equal (trit_add  '+ '0) '(0 +))
+(equal (trit_add  '+ '+) '(+ -))
+(equal (trit_add+ '- '-) '(0 -))
+(equal (trit_add+ '- '0) '(0 0))
+(equal (trit_add+ '- '+) '(0 +))
+(equal (trit_add+ '0 '-) '(0 0))
+(equal (trit_add+ '0 '0) '(0 +))
+(equal (trit_add+ '0 '+) '(+ -))
+(equal (trit_add+ '+ '-) '(0 +))
+(equal (trit_add+ '+ '0) '(+ -))
+(equal (trit_add+ '+ '+) '(+ 0))
 
 
-;(bal3_add '(+ - - 0) '(+ 0 - -))   ; doesn't work
