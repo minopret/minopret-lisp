@@ -3,6 +3,7 @@
 # implemented in the manner of Peter Norvig's lis.py
 # Aaron Mansheim, 2011-09-24
 
+# TODO make this a command-line option
 trace = True
 
 # sugar
@@ -28,16 +29,18 @@ class Env(dict):
 def atom_(x): return isa(x, Symbol) or x == ()
 def car_(x): return x[0]
 def cdr_(x): return x[1:]
-def cons_(x, y): return [x] + list(y)
+def cons_(x, y): return tuple([x] + list(y))
 def eq_(x, y): return x is y
 def quote_(x): return x
-def append_(x, y): return list(x) + list(y)
+
+def and_(x, y): return (y if x else False)
+def append_(x, y): return tuple(list(x) + list(y))
 def caar_(x): return x[0][0]
 def cadar_(x): return x[0][1]
 def caddar_(x): return x[0][2]
 def caddr_(x): return x[2]
 def cadr_(x): return x[1]
-def list_(*x): return list(x)
+def list_(*x): return tuple(x)
 def not_(x): return not x
 def null_(x): return x == ()
 def pair_(x, y): return zip(x, y)
@@ -50,6 +53,7 @@ def mk_builtins(env):
         'cons': cons_, 'eq': eq_,
         'quote': quote_,  # fictitious because can't eval its args
         
+        'and': and_,  # fictitious because can't always eval second arg
         'append': append_,
         # assoc  # not built in yet
         'caar': caar_, 'cadar': cadar_, 'caddar': caddar_,
@@ -78,7 +82,11 @@ def eval_(x, env=env0):
             return ()
         else:
             (test, action) = pairs[0]
-            return eval_((action if eval_(test, env) else [x[0]]+list(x[2:])), env)
+            if not eval_(test, env):
+                action = tuple([x[0]]+list(x[2:]))
+            return eval_(action, env)
+    elif x[0] == 'and':
+        return (eval_(x[2], env) if eval_(x[1], env) else False)
     elif x[0] == 'label':          # (label name value)
         (_, name, value) = x
         env[name] = eval_(value, env)
@@ -90,6 +98,7 @@ def eval_(x, env=env0):
     else:
         y = [eval_(xi, env) for xi in x]
         y0 = y.pop(0)
+        y = tuple(y)
         if trace:
             print 'Apply ' + str(y0) + ' to ' + str(y) + '.'
         return y0(*y)
