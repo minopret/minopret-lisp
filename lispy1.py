@@ -55,7 +55,7 @@ def mk_builtins(env):
         
         'and': and_,  # fictitious because can't always eval second arg
         'append': append_,
-        # assoc  # not built in yet
+        'assoc': lambda x, y: dict(y)[x],
         'caar': caar_, 'cadar': cadar_, 'caddar': caddar_,
         'caddr': caddr_, 'cadr': cadr_,
         # evcon  # not needed  # evlis  # not needed
