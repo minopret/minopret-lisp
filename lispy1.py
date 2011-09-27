@@ -69,7 +69,7 @@ def eval_(x, env=env0):
     from sys import exit
 
     if trace:
-        print 'Evaluate ' + str(x) + ' in environment ' + str(env) + '.'
+        print 'Evaluate ' + str(x) + '.' # + ' in environment ' + str(env) + '.'
     if env0['atom'](x):
         e = env.find(x)
         return (e[x] if e != None else x)
