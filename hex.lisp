@@ -14,7 +14,6 @@
 ; one digit. Digits are listed from most to least significant.
 ;
 ; Useful functions so far: bal3_neg bal3_minus bal3_add
-; Utilities with a temporary home here: equal assert_equal
 ; Utilities with a temporary home here: fold-left
 ;
 ; Aaron Mansheim, 2011-09-24
