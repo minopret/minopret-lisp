@@ -43,34 +43,32 @@
 ; simply adding up a_i * 3^i. I'll file away the fact that each
 ; nonnegative number up to +++ (bal 3) = D (base 16) fits in one hex digit.
 
-(label hex_mult_3 (lambda (x) (cond
-  ((eq x '0) '(0 0))  ((eq x '1) '(0 3))  ((eq x '2) '(0 6))  ((eq x '3) '(0 9))
-  ((eq x '4) '(0 C))  ((eq x '5) '(0 F))  ((eq x '6) '(1 2))  ((eq x '7) '(1 5))
-  ((eq x '8) '(1 8))  ((eq x '9) '(1 B))  ((eq x 'A) '(1 E))  ((eq x 'B) '(2 1))
-  ((eq x 'C) '(2 4))  ((eq x 'D) '(2 7))  ((eq x 'E) '(2 A))  ((eq x 'F) '(2 D))
-)))
+(label hex_mult_3 (lambda (x) (assoc x '(
+    (0 (0 0))  (1 (0 3))  (2 (0 6))  (3 (0 9))
+    (4 (0 C))  (5 (0 F))  (6 (1 2))  (7 (1 5))
+    (8 (1 8))  (9 (1 B))  (A (1 E))  (B (2 1))
+    (C (2 4))  (D (2 7))  (E (2 A))  (F (2 D))
+))))
 
 ; for carrying or incrementing
-(label hex_add_1 (lambda (x) (cond
-  ((eq x '0) '(0 1))  ((eq x '1) '(0 2))  ((eq x '2) '(0 3))  ((eq x '3) '(0 4))
-  ((eq x '4) '(0 5))  ((eq x '5) '(0 6))  ((eq x '6) '(0 7))  ((eq x '7) '(0 8))
-  ((eq x '8) '(0 9))  ((eq x '9) '(0 A))  ((eq x 'A) '(0 B))  ((eq x 'B) '(0 C))
-  ((eq x 'C) '(0 D))  ((eq x 'D) '(0 E))  ((eq x 'E) '(0 F))  ((eq x 'F) '(1 0))
-)))
+(label hex_add_1 (lambda (x) (assoc x '(
+    (0 (0 1))  (1 (0 2))  (2 (0 3))  (3 (0 4))
+    (4 (0 5))  (5 (0 6))  (6 (0 7))  (7 (0 8))
+    (8 (0 9))  (9 (0 A))  (A (0 B))  (B (0 C))
+    (C (0 D))  (D (0 E))  (E (0 F))  (F (1 0))
+))))
 
 ; for carrying
-(label hex_add_2 (lambda (x) (cond
-  ((eq x '0) '(0 2))  ((eq x '1) '(0 3))  ((eq x '2) '(0 4))  ((eq x '3) '(0 5))
-  ((eq x '4) '(0 6))  ((eq x '5) '(0 7))  ((eq x '6) '(0 8))  ((eq x '7) '(0 9))
-  ((eq x '8) '(0 A))  ((eq x '9) '(0 B))  ((eq x 'A) '(0 C))  ((eq x 'B) '(0 D))
-  ((eq x 'C) '(0 E))  ((eq x 'D) '(0 F))  ((eq x 'E) '(1 0))  ((eq x 'F) '(1 1))
-)))
+(label hex_add_2 (lambda (x) (assoc x '(
+    (0 (0 2))  (1 (0 3))  (2 (0 4))  (3 (0 5))
+    (4 (0 6))  (5 (0 7))  (6 (0 8))  (7 (0 9))
+    (8 (0 A))  (9 (0 B))  (A (0 C))  (B (0 D))
+    (C (0 E))  (D (0 F))  (E (1 0))  (F (1 1))
+))))
 
 ; 16 (base 10) = 27 - 9 - 3 + 1 (base 10) = + - - + (bal 3)
-(label trit_mult_16 (lambda (x) (cond
-  ((eq x '+) '(+ - - +))
-  ((eq x '0) '(0 0 0 0))
-  ((eq x '-) '(- + + -)) )))
+(label trit_mult_16 (lambda (x) (assoc x '(
+    (+ (+ - - +))  (0 (0 0 0 0))  (- (- + + -)) ))))
 
 ; Add two hex numbers by reducing to balanced ternary arithmetic.
 (label hex_add (lambda (x y)
@@ -87,14 +85,14 @@
 ;  = (0 + - -)*(+ 0 0 + + +) + (+ 0 - - 0 +)
 ;  = (+ - - + - + + -) + (+ 0 - - 0 +)
 ;  =  + - 0 0 + 0 + 0  (bal 3) = 2187 - 729 + 27 + 3 = 1488 (base 10)
-(label hex_to_trit (lambda (x) (cond
-  ((eq x '0) '(0 0 0 0))  ((eq x '1) '(0 0 0 +))  ((eq x '2) '(0 0 + -))
-  ((eq x '3) '(0 0 + 0))  ((eq x '4) '(0 0 + +))  ((eq x '5) '(0 + - -))
-  ((eq x '6) '(0 + - 0))  ((eq x '7) '(0 + - +))  ((eq x '8) '(0 + 0 -))
-  ((eq x '9) '(0 + 0 0))  ((eq x 'A) '(0 + 0 +))  ((eq x 'B) '(0 + + -))
-  ((eq x 'C) '(0 + + 0))  ((eq x 'D) '(0 + + +))  ((eq x 'E) '(+ - - -))
-  ((eq x 'F) '(+ - - 0))
-)))
+(label hex_to_trit (lambda (x) (assoc x '(
+    (0 (0 0 0 0))  (1 (0 0 0 +))  (2 (0 0 + -))
+    (3 (0 0 + 0))  (4 (0 0 + +))  (5 (0 + - -))
+    (6 (0 + - 0))  (7 (0 + - +))  (8 (0 + 0 -))
+    (9 (0 + 0 0))  (A (0 + 0 +))  (B (0 + + -))
+    (C (0 + + 0))  (D (0 + + +))  (E (+ - - -))
+    (F (+ - - 0))
+))))
 
 
 
@@ -102,11 +100,9 @@
 ; 10 (base 10) = + 0 + (bal 3).
 ; 3^i = 1 3 9 27 81 243 729 2187 6561 19683 ... (base 10).
 ; Example: 1488 (base 10) = 2187 - 729 + 27 + 3 = + - 0 0 + 0 + 0 (bal 3).
-(label decimal_mult_3 (lambda (x) (cond
-  ((eq x '0) '(0 0))  ((eq x '1) '(0 3))  ((eq x '2) '(0 6))
-  ((eq x '3) '(0 9))  ((eq x '4) '(1 2))  ((eq x '5) '(1 5))
-  ((eq x '6) '(1 8))  ((eq x '7) '(2 1))  ((eq x '8) '(2 4))
-  ((eq x '9) '(2 7)) )))
+(label decimal_mult_3 (lambda (x) (assoc x '(
+    (0 (0 0))  (1 (0 3))  (2 (0 6)) (3 (0 9))  (4 (1 2))  (5 (1 5))
+    (6 (1 8))  (7 (2 1))  (8 (2 4)) (9 (2 7)) ))))
 
 (label trit_to_decimal (lambda (x) (trit_to_hex x)))
 
@@ -115,10 +111,10 @@
 ; 10 (base 10) = 9 + 1 (base 10) = + 0 + (bal 3)
 ; Example: 1488 (base 10)
 ; = (+ + 0 + 0 0 +) + (+ - - 0 - + +) + (+ 0 0 0 -) + (+ 0 -)
-(label trit_mult_10 (lambda (x) (cond
-  ((eq x '+) '(+ 0 +))
-  ((eq x '0) '(0 0 0))
-  ((eq x '-) '(- 0 -)) )))
+(label trit_mult_10 (lambda (x) (assoc x '(
+    (+ (+ 0 +))
+    (0 (0 0 0))
+    (- (- 0 -)) ))))
 
 ; Add two decimal numbers by reducing to balanced ternary arithmetic.
 (label add (lambda (x y) (bal3_to_decimal
@@ -133,9 +129,7 @@
 
 ; Balanced-ternary subtraction reduces easily to addition.
 
-(label trit_neg (lambda (x) (cond ((eq x '+) '-)
-                                  ((eq x '-) '+)
-                                  (       t  '0) )))
+(label trit_neg (lambda (x) (assoc x '( (+ -) (0 0) (- +) ) )))
 
 (label bal3_neg (lambda (x) (cond
   ((null x)  ())
