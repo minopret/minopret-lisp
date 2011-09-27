@@ -35,6 +35,7 @@ def quote_(x): return x
 
 def and_(x, y): return (y if x else False)
 def append_(x, y): return tuple(list(x) + list(y))
+def assoc_(x, y): return dict(y)[x]
 def caar_(x): return x[0][0]
 def cadar_(x): return x[0][1]
 def caddar_(x): return x[0][2]
@@ -55,7 +56,7 @@ def mk_builtins(env):
         
         'and': and_,  # fictitious because can't always eval second arg
         'append': append_,
-        'assoc': lambda x, y: dict(y)[x],
+        'assoc': assoc_,
         'caar': caar_, 'cadar': cadar_, 'caddar': caddar_,
         'caddr': caddr_, 'cadr': cadr_,
         # evcon  # not needed  # evlis  # not needed
