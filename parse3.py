@@ -73,5 +73,5 @@ def wrinkle(tokens):
 
 def read_exprs(prompt='Press Ctrl-D on a new line to exit> '):
     prog = raw_input(prompt)
-    return string_to_list(prog)
+    return string_to_tuple(prog)
 
