@@ -23,8 +23,8 @@
      to ML-like languages or foundations of mathematics that
      I really doubt copyright applies to the selection or,
      in few cases such as "bool", even the expression of the ideas.
-     the expression. Also this is definitely not an appropriate
-     substitute in any way for any part of "Software Foundations".
+     Also this is definitely not an appropriate substitute in any
+     way for any part of "Software Foundations".
    Commonalities with SfLib.v (again, I have not directly copied but
      may have recreated the material that I learned - although
      frankly I'm not as good at this and my versions may in
