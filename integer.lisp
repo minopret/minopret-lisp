@@ -21,7 +21,7 @@
 
 ; TODO Provide a mechanism to depend on a module or file.
 ; I suppose a Makefile or scons that causes the required
-; file to be concatenated on stdin to repyl1.py would be
+; file to be concatenated on stdin to mnplisp.py would be
 ; good enough for a start.
 
 

@@ -1,4 +1,4 @@
-# lispy1.py
+# mnpeval.py
 # A language much like Lisp I
 #   <http://www-formal.stanford.edu/jmc/recursive.html>
 # as interpreted by Paul Graham,
@@ -10,7 +10,7 @@
 # TODO Consider features to adopt as outlined and compared at hyperpolyglot.org
 # TODO Consider the FUNARG problem
 
-# TODO make this an option set by command-line option to repyl1.py
+# TODO make this an option set by command-line option to mnplisp.py
 trace = False
 
 # sugar

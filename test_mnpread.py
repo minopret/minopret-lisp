@@ -1,4 +1,4 @@
-from parse3 import *
+from mnpread import *
 
 x = string_to_tuple("(cdr '(atom lambda))")
 print x

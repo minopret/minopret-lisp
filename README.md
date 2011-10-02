@@ -1,36 +1,39 @@
 minopret lisp
 
-Usage: echo "(quote Hello World)" | python rep3.py 
+Usage: echo "'(Hello World)" | python mnplisp.py 
 
 A Lisp in the manner of John McCarthy (1960).
-Created: "minopret" (Aaron Mansheim), 2011-09-06 to 2011-09-11
+Created: "minopret" (Aaron Mansheim), 2011-09-06 to 2011-10-02
 
-I hope that lisp3.py makes clear to anyone who reads it
-how an elementary Lisp runtime works. Based on this
-(or any of quite a few other tutorial Lisp implementations
-that I have seen out there) I expect that others and I will
-be able to produce and enhance a Lisp within any existing
-runtime system.
+I hope that mnpeval.py makes clear to anyone who reads it
+how an elementary Lisp runtime works. That file is in
+essence a stripped down version of Peter Norvig's "lis.py".
+
+Based on this (or any of quite a few other tutorial Lisp
+implementations that I have seen out there) I expect that
+others and I will be able to produce and enhance a Lisp
+within any existing runtime system.
 
 Many Lisp implementations consist of a "read-eval-print loop".
 We could always let Python do the "read" and "print" parts and
-refrain from looping. The critical piece in lisp3.py is "eval".
+refrain from looping. The critical piece in mnpeval.py is "eval".
 That is enough to occupy a person's attention. Reading is in
-parse3.py. A read-eval-print driver is in rep3.py.
+mnpread.py. A read-eval-print driver is in mnplisp.py.
 
 I have no illusions that this will break any speed records.
 That's totally beside the point. Some time,
 I may be able to apply my formal logic skills (even Coq) to
 provide certifiably correct optimizations.
  
-This "eval" closely follows Paul Graham's representation
-in "The Roots of Lisp" of John McCarthy's 1960 paper
-"Recursive Functions of Symbolic Expressions and Their
-Computation by Machine, Part I" (of which no other part
-was published). "The Roots of Lisp" mentions that
-major inconveniences of 1960 Lisp are mostly resolved
-in MIT AI Memo No. 453 "The Art of the Interpreter"
-which may be located via the Computer History Museum:
+The functionality of this "eval" closely follows Paul
+Graham's representation in "The Roots of Lisp" of John
+McCarthy's 1960 paper "Recursive Functions of Symbolic
+Expressions and Their Computation by Machine, Part I"
+(of which no other part was published). "The Roots of
+Lisp" mentions that major inconveniences of 1960 Lisp
+are mostly resolved in MIT AI Memo No. 453 "The Art of
+the Interpreter" which may be located via the Computer
+History Museum:
 <http://www.softwarepreservation.org/projects/LISP/scheme_family/>
 The McCarthy paper may be located similarly:
 <http://www.softwarepreservation.org/projects/LISP/lisp15_family/>

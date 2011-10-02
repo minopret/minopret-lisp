@@ -1,5 +1,5 @@
-# This is called "parse3" because it takes me
-# about three really good tries to get it right.
+# mnpread: At first this was called "parse3" because it
+# takes me about three really good tries to get it right.
 #
 # Aaron Mansheim, 2011-09-22
 

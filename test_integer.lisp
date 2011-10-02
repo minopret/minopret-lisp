@@ -1,5 +1,4 @@
-; Tests of balanced-ternary arithmetic including
-; conversion with decimal and hexadecimal.
+; Tests of balanced-ternary arithmetic.
 ;
 ; Aaron Mansheim, 2011-09-26
 

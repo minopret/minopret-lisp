@@ -1,5 +1,5 @@
 from types import StringTypes
-from parse3 import read_exprs
+from mnpread import read_exprs
 from lisp3 import Symbol, List
 
 def list_to_lisp3(x):

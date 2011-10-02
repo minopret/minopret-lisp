@@ -3,15 +3,15 @@
 # Aaron Mansheim, September 2011
 
 # TODO Provide a --script option that gets input from stdin with no prompt.
-# TODO Provide a trace option that passes through to parse3.
+# TODO Provide a trace option that passes through to mnpread.
 # TODO Exit when finished evaluating and stdin has closed. (How?)
 
 from sys import stdin
 
-def repl(prompt='repyl1> '):
-    from lispy1 import eval_
-    # from parse3 import read_exprs  # for interactive prompt
-    from parse3 import string_to_tuple  # for input from file
+def repl(prompt='mnplisp> '):
+    from mnpeval import eval_
+    # from mnpread import read_exprs  # for interactive prompt
+    from mnpread import string_to_tuple  # for input from file
     import traceback
     
     while True:
