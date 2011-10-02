@@ -1,9 +1,16 @@
 # lispy1.py
-# A language much like Lisp I (McCarthy, Russell, 1960)
-# implemented in the manner of Peter Norvig's lis.py
+# A language much like Lisp I
+#   <http://www-formal.stanford.edu/jmc/recursive.html>
+# as interpreted by Paul Graham,
+#   <http://www.paulgraham.com/rootsoflisp.html>
+# but implemented in the manner of Peter Norvig's lis.py
+#   <http://norvig.com/lispy.html>
 # Aaron Mansheim, 2011-09-24
 
-# TODO make this a command-line option
+# TODO Consider features to adopt as outlined and compared at hyperpolyglot.org
+# TODO Consider the FUNARG problem
+
+# TODO make this an option set by command-line option to repyl1.py
 trace = False
 
 # sugar
@@ -91,9 +98,20 @@ def eval_(x, env=env0):
     elif x[0] == 'label':          # (label name value)
         (_, name, value) = x
         env[name] = eval_(value, env)
+    # Actually Paul Graham claims 'label' semantics should be:
+    #((eq (caar e) 'label)
+    #     (eval. (cons (caddar e) (cdr e))
+    #                 (cons (list. (cadar e) (car e)) a)))
+
     elif x[0] == 'lambda':         # (lambda (var*) exp)
         (_, parms, body) = x
         return lambda *args: eval_(body, Env(parms, args, env))
+    # Actually Paul Graham claims 'lambda' semantics should be:
+    #((eq (caar e) 'lambda)
+    #     (eval. (caddar e)
+    #                 (append. (pair. (cadar e) (evlis. (cdr e) a))
+    #                                      a)))
+
     elif x[0] == 'exit':
         exit()
     else:
