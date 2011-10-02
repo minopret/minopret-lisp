@@ -1,0 +1,62 @@
+I have lots of ideas for this. Here are some.
+
+Baseline functionality
+- (load) preferably compatible with the REPL
+- Implement printing s-expressions instead of Python data.
+- Integer division (rationals) using quote notation
+- Integer-coded character data.
+- Compare magnitude of integers.
+
+Application programming
+- Implement computation of fibonacci numbers. This is easily in reach.
+  Do some timing. Compare with a few mature languages that have
+  various degrees of support for this kind of thing.
+- Implement computation of factorials. How fast is that? How big an input
+  can this language, its library, and its interpreter support?
+  What's the limiting factor? Do you hit Python's recursion stack limit?
+  Do you run out of patience?
+
+Advances
+- Explicit call stack in the interpreter.
+- Enable tail calls to reuse existing stack frames.
+- Rewrite the interpreter in something other than Python:
+  Java, CLISP, JavaScript, CINT <http://root.cern.ch/drupal/content/cint>,
+  bash, Perl.
+- Implement a metacircular evaluator like Paul Graham's jmc.lisp
+  in "The Roots of Lisp".
+- Automatically translate programs (including the evaluator) into
+  data and code for other languages, such as Python and C.
+  If you don't mind using the host language's facilities such as garbage
+  collection, this might be just about as easy as it was to
+  built the interpreter. And it pretty much counts as compilation.
+- Add efficient division and rational arithmetic using Hehner-Horspool
+  quote notation (as is covered in Wikipedia).
+- Analyze the running time of the language interpreter's operations.
+  Can you do running-time analysis of Lisp programs from source code?
+- Build profiling into the interpreter (or later, the compiler)
+  for any lambdas named in the environment, in order to identify
+  functions that have a need for speed.
+- Use this Lisp language to implement a SECD machine. Then port the
+  interpreter to the SECD machine. Or look up the G-machine.
+- Implement the "One Reference Only" scheme to obviate any need
+  for garbage collection. PicoLisp does this, I think. And ACL2
+  adopted one researcher's plan for this, called "Linear Logic",
+  for which the articles and metacircular evaluator in Lisp
+  are on the web.
+- Learn about ACL2 and see what other ideas you can use from that effort.
+- Move toward Scheme. Or Lisp in Small Pieces. Or not.
+- Use this language to implement the Calculus of Constructions as in
+  the paper "Mathematical Libraries as Proof Assistant Environments".
+  Then model and prove the correctness of the interpreter.
+- Once the correctness of the interpreter has some guarantees such
+  as formal proofs, automated tests, or both, make aggressive
+  optimizations that preserve the correctness.
+- Implement accurate trig functions, perhaps via CORDIC and/or
+  "Gal's accurate tables" as are covered in Wikipedia.
+- Implement IEEE 754 doubles as explained by David Goldberg in Appendix D of
+  the Sun Numerical Computation Guide.
+- Implement an incremental compiler for statements. This technique is
+  used to speed up the REPL.
+- Compile to gcc's GENERIC middle-end language. Then get the benefit
+  of its libffi foreign function interface. Suddenly, interfacing to
+  POSIX and lots of other things becomes tractable.
