@@ -8,28 +8,32 @@
 
 from sys import stdin
 
-def repl(prompt='mnplisp> '):
+def rep():
     from mnpeval import eval_
     # from mnpread import read_exprs  # for interactive prompt
     from mnpread import string_to_tuple  # for input from file
     import traceback
+
+    try:
+        # x = read_exprs(prompt = prompt)  # for interactive prompt
+        x = string_to_tuple(stdin.read())  # for input from file
+        for xi in x:
+            yi = eval_(xi)
+            if yi != None:
+                print yi
+    except EOFError:
+        print EOFError
+    except StopIteration:
+        print StopIteration
+    except Exception:
+        traceback.print_exc()
+
+def repl(prompt='mnplisp> '):
     
     while True:
-        try:
-            # x = read_exprs(prompt = prompt)  # for interactive prompt
-            x = string_to_tuple(stdin.read())  # for input from file
-            for xi in x:
-                yi = eval_(xi)
-                if yi != None:
-                    print yi
-        except EOFError:
-            print EOFError
-            break
-        except StopIteration:
-            print StopIteration
-            break
-        except Exception:
-            traceback.print_exc()
+        rep()
 
-repl()
+#repl()
+
+rep()
 

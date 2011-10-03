@@ -351,5 +351,5 @@
 ; return:     car: digits carried from sum of digit products with carry
 ;            cadr: digits completed from sum of digit products
 (label bal3_mult_trit_acc (lambda (m n cp0) (bal3_mult_trit_regroup
-    (rotate-right (bal3_add (bal3_mult_trit m n) (car cp0)))
+    (rotate-right (bal3_add_denorm (bal3_mult_trit m n) (car cp0)))
     cp0)))
