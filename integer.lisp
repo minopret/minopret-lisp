@@ -15,7 +15,8 @@
 ; The atom + is a positive one digit. The atom - is a negative
 ; one digit. Digits are listed from most to least significant.
 ;
-; Useful functions so far: bal3_neg bal3_minus bal3_add bal3_mult
+; Useful functions so far:
+; bal3_neg bal3_minus bal3_add bal3_mult bal3_lt bal3_gt
 ;
 ; Aaron Mansheim, 2011-09-24
 
@@ -200,6 +201,17 @@
 (label bal3_minus (lambda (x y) (bal3_add x (bal3_neg y))))
 
 
+
+; Balanced-ternary comparison can correctly reduce to subtraction
+; although most times it wouldn't require that exactness.
+
+; Assuming normalized so that the lead digit is zero if, and only if,
+; that is the only digit.
+(label bal3_lt0 (lambda (x) (eq (car x) '-)))
+(label bal3_gt0 (lambda (x) (eq (car x) '+)))
+
+(label bal3_lt (lambda (x y) (bal3_lt0 (bal3_minus x y))))
+(label bal3_gt (lambda (x y) (bal3_gt0 (bal3_minus x y))))
 
 ; So, balanced-ternary addition. Right.
 
