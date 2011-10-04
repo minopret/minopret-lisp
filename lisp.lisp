@@ -1,5 +1,5 @@
 ;Python def and_(x, y): return (y if x else False)
-(label and ( lambda (x y) (cond (x y) (t ())) ))
+(label and ( lambda (x y) (cond (x (cond (y t) (t ()))) (t ())) ))
 
 ;Python def append_(x, y): return tuple(list(x) + list(y))
 (label append ( lambda (x y) (cond ((null x) y) (t (cons (car x) (append (cdr x) y))) )))
@@ -29,7 +29,7 @@
 (label not ( lambda (x) (cond (x ()) (t t)) ))
 
 ;Python def null_(x): return x == ()
-(label null ( lambda (x) (cond ((eq x ()) t) (t ())) ))
+(label null ( lambda (x) (eq x ()) ))
 
 ;Python def pair_(x, y): return zip(x, y)
 (label pair ( lambda (x y) (cond ((null (cdr x)) (list (car x) (car y)))
