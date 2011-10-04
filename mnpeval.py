@@ -33,43 +33,23 @@ class Env(dict):
 
 # defined with "def" rather than lambda
 # for sake of better debug messages
-def atom_(x): return isa(x, Symbol) or x == ()
+def atom_(x): return Symbol('t') if isa(x, Symbol) or x == () else ()
 def car_(x): return x[0]
 def cdr_(x): return x[1:]
 def cons_(x, y): return tuple([x] + list(y))
-def eq_(x, y): return x is y
+def eq_(x, y): return Symbol('t') if x is y else ()
 def quote_(x): return x
 
-def and_(x, y): return (y if x else False)
-def append_(x, y): return tuple(list(x) + list(y))
-def assoc_(x, y): return dict(y)[x]
-def caar_(x): return x[0][0]
-def cadar_(x): return x[0][1]
-def caddar_(x): return x[0][2]
-def caddr_(x): return x[2]
-def cadr_(x): return x[1]
-def list_(*x): return tuple(x)
-def not_(x): return not x
-def null_(x): return x == ()
-def pair_(x, y): return zip(x, y)
-
 def mk_builtins(env):
-    import operator as op
     env.update({
         'atom': atom_, 'car': car_, 'cdr': cdr_,
         # cond  # implemented in eval
         'cons': cons_, 'eq': eq_,
         'quote': quote_,  # fictitious because can't eval its args
-        
-        'and': and_,  # fictitious because can't always eval second arg
-        'append': append_,
-        'assoc': assoc_,
-        'caar': caar_, 'cadar': cadar_, 'caddar': caddar_,
-        'caddr': caddr_, 'cadr': cadr_,
-        # evcon  # not needed  # evlis  # not needed
-        'list': list_, 'not': not_, 'null': null_, 'pair': pair_,
     })
     return env
+
+def boolean(x): return True if x is not () else False
 
 env0 = mk_builtins(Env())
 
@@ -77,35 +57,42 @@ def eval_(x, env=env0):
     from sys import exit
 
     if trace:
-        print 'Evaluate ' + str(x) + '.' # + ' in environment ' + str(env) + '.'
-    if env0['atom'](x):
+        print 'Evaluate ' + str(x) + '.'  # + ' in environment ' + str(env) + '.'
+
+    if isa(x, Symbol) or x == ():  # (atom x)
         e = env.find(x)
         return (e[x] if e != None else x)
-    elif x[0] == 'quote':          # (quote exp)
-        (_, exp) = x
+
+    elif x[0] == 'quote':
+        exp = x[1]
         return exp
-    elif x[0] == 'cond':           # (cond (test action)* )
+
+    elif x[0] == 'cond':
         pairs = x[1:]
         if len(pairs) == 0:        # In other implementations is it an error?
             return ()
         else:
             (test, action) = pairs[0]
-            if not eval_(test, env):
+            if not boolean(eval_(test, env)):
                 action = tuple([x[0]]+list(x[2:]))
             return eval_(action, env)
+
     elif x[0] == 'and':
-        return (eval_(x[2], env) if eval_(x[1], env) else False)
-    elif x[0] == 'label':          # (label name value)
-        (_, name, value) = x
+        return (eval_(x[2], env) if boolean(eval_(x[1], env)) else False)
+
+    elif x[0] == 'label':
+        name  = x[1]
+        value = x[2]
         env[name] = eval_(value, env)
     # Actually Paul Graham claims 'label' semantics should be:
     #((eq (caar e) 'label)
     #     (eval. (cons (caddar e) (cdr e))
     #                 (cons (list. (cadar e) (car e)) a)))
 
-    elif x[0] == 'lambda':         # (lambda (var*) exp)
-        (_, parms, body) = x
-        return lambda *args: eval_(body, Env(parms, args, env))
+    elif x[0] == 'lambda':
+        params = x[1]
+        body   = x[2]
+        return lambda *args: eval_(body, Env(params, args, env))
     # Actually Paul Graham claims 'lambda' semantics should be:
     #((eq (caar e) 'lambda)
     #     (eval. (caddar e)
@@ -114,6 +101,7 @@ def eval_(x, env=env0):
 
     elif x[0] == 'exit':
         exit()
+
     else:
         y = [eval_(xi, env) for xi in x]
         y0 = y.pop(0)

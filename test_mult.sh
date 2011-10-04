@@ -1,2 +1,2 @@
 #!/bin/sh
-cat lib.lisp integer.lisp test_mult.lisp | python mnplisp.py
+cat lisp.lisp lib.lisp integer.lisp test_mult.lisp | python mnplisp.py
