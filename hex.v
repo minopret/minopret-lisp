@@ -72,6 +72,9 @@ and (and (feq (fand (fand a b) c) (fand (fand b c) a))
          (feq (fand a (fnot (fand a b))) (fand a (fnot b)))).
 
 
+(* Been wondering, how would I define a type for
+models of the two-element boolean algebra? *)
+
 
 Theorem boolean_algebra_for_Prop :
   models_boolean_algebra_2 Prop False True iff and not.

@@ -1,7 +1,6 @@
 Require Export hex.
 
 (* Handle functions that don't always apply well to their input type *)
-(* We'll want this, but it will be a while yet *)
 Inductive option {X: Type} : Type :=
 | Some : X -> @option X
 | None : @option X.
