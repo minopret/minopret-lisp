@@ -216,6 +216,7 @@ Qed.
      e(a, b) that includes pairs (a, b) that satisfy
      a == b (modulo m).
 *)
+(*
 Definition is_classifier {X: Type} (c : X -> X) (e : X -> X -> Prop) : Prop
 :=
     equivalence_relation e ->
@@ -232,19 +233,20 @@ Theorem equiv_functionality : forall (X Y: Type)
   (eX : X -> X -> Prop) (cX : X -> X)
   (f : X -> Y) (u v : X),
 is_classifier cX eX -> eX v (cX u) -> cX v = cX u.
+*)
 
 (* My favorite big hammer to wield *)
-Theorem functionality : forall (X Y : Type) (f : X -> Y) (u v : X),
+(* Theorem functionality : forall (X Y : Type) (f : X -> Y) (u v : X),
   u = v -> f u = f v.
 Proof. intros X Y f u v H. rewrite H. reflexivity.
-Qed.
+Qed. *)
 
-Theorem equiv_remove_S : forall (equiv : nat -> nat -> Prop) (n m : nat),
+(* Theorem equiv_remove_S : forall (equiv : nat -> nat -> Prop) (n m : nat),
   equivalence_relation equiv -> equiv n m -> equiv (S n) (S m).
-Proof. intros equiv n. induction n as [| n'].
-(* n = O *) intros m Hequiv H. inversion Hequiv as [Hr Hst].
-  unfold reflexive in Hr. induction m as [| m'].
-  (* m = O *) apply Hr.
+Proof. intros equiv n. induction n as [| n']. *)
+(* n = O *) (* intros m Hequiv H. inversion Hequiv as [Hr Hst].
+  unfold reflexive in Hr. induction m as [| m']. *)
+  (* m = O *) (* apply Hr. *)
   (* m = S m' *)
 
 Definition pred (n : nat) : nat :=
@@ -338,7 +340,7 @@ fun (n m: nat) => feq (feqn n m) t.
 (* Because we have a couple of different boolean models,
    I want to arrange to plug them into this natural number
    model.
- *)
+ *)(*
 Theorem natural_numbers_on_nat :
   forall (B: Type) (f t: B) (feq: B -> B -> Prop)
     (fand: B -> B -> B) (fnot: B -> B),
@@ -350,13 +352,13 @@ Theorem natural_numbers_on_nat :
         B f t feq fand fnot.
 Proof. intros B f t feq fand fnot Hb feqn Heqnb Hneqnb.
 unfold models_natural_numbers. split.
-(* boolean *) apply Hb.
+* boolean * apply Hb.
 split.
-(* equiv *) apply Heqnb.
+* equiv * apply Heqnb.
 split.
-(* O <> S n *) apply Hneqnb.
+* O <> S n * apply Hneqnb.
 split.
-(* eqn add S *) intros n m H.
+* eqn add S * intros n m H.
   inversion Heqnb as [Hr Hst]. inversion Hst as [Hs Ht].
   unfold reflexive in Hr. unfold symmetric in Hs.
   unfold transitive in Ht.
@@ -364,10 +366,10 @@ split.
 
  simpl in H.
   simpl in H. apply H.
-(* nat_ind *) intros P HO HS n. induction n as [| n'].
-  (* nat_ind O *) apply HO.
-  (* nat_ind (S O) *) apply HS in IHn'. apply IHn'.
-Qed.
+* nat_ind * intros P HO HS n. induction n as [| n'].
+  * nat_ind O * apply HO.
+  * nat_ind (S O) * apply HS in IHn'. apply IHn'.
+Qed. *)
 
 
 
@@ -547,20 +549,20 @@ split.
   apply (beq_nat_trans (bin_nat x) (bin_nat y) (bin_nat z) Hx Hz).
 Qed.
 
-Theorem natural_numbers_on_bool_and_bin : models_natural_numbers
+(* Theorem natural_numbers_on_bool_and_bin : models_natural_numbers
   bin xH (fun (n m: bin) => beq_bin n m = true) next_bin
   bool false true (@eq bool) andb negb.
 Proof. unfold models_natural_numbers. split.
-(* bool *) apply boolean_algebra_on_bool.
+* bool * apply boolean_algebra_on_bool.
 split.
-(* equiv *) apply bequiv_bin.
+* equiv * apply bequiv_bin.
 split.
-(* least *) intros n. unfold not. intros H. induction n as [| n' | n' ].
-  (* xH *) inversion H.
-  (* xI n' *) inversion H.
-  (* xO n' *) inversion H.
+* least * intros n. unfold not. intros H. induction n as [| n' | n' ].
+  * xH * inversion H.
+  * xI n' * inversion H.
+  * xO n' * inversion H.
 split.
-(* beq_bin add next_bin *) 
+* beq_bin add next_bin *)
 
 
 

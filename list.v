@@ -26,7 +26,7 @@ match x with
 | cons _ v => Some v
 end.
 
-Definition sym_t : expr := symbol (d4 (h7)).
+Definition sym_t : expr := symbol (d4 h7).
 
 Definition atom (x: expr) : expr :=
 match x with
@@ -35,11 +35,11 @@ match x with
 | cons _ _ => nil
 end.
 
-Fixpoint cond (x: expr) : @option expr :=
+(* Fixpoint cond (x: expr) : @option expr :=
 match x with
 | nil => None
 | symbol _ => None
-| cons u v => 
+| cons u v => *)
 
 (*
     US-ASCII printable
@@ -111,7 +111,7 @@ Definition sym_label : expr :=
 Definition sym_lambda : expr :=
   symbol (d1 (d6 (d4 (d6 (d2 (d6 (dD (d6 (d1 (d6 (dC h6))))))))))).
 
-Definition sym_expr : expr :=
+Definition sym_list : expr :=
   symbol (d4 (d7 (d3 (d7 (d9 (d6 (dC h6))))))).
 
 Definition sym_not : expr :=
@@ -123,5 +123,5 @@ Definition sym_null : expr :=
 Definition sym_pair : expr :=
   symbol (d2 (d7 (d9 (d6 (d1 (d6 (d0 h7))))))).
 
-Definition sym_quote : exprS :=
+Definition sym_quote : expr :=
   symbol (d5 (d6 (d4 (d7 (dF (d6 (d5 (d7 (d1 h7))))))))).

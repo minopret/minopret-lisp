@@ -1,5 +1,7 @@
+Require Export list.
+
 (* (label and ( lambda (x y) (cond (x (cond (y t) (t ()))) (t ())) )) *)
-Definition defun_and : list :=
+Definition defun_and : expr :=
 (cons   sym_label
 (cons   sym_and
 (cons   (cons   sym_lambda
@@ -10,14 +12,14 @@ Definition defun_and : list :=
                 (cons   (cons   (symbol (d8 h7))
                         (cons   (cons    sym_cond
                                 (cons   (cons   (symbol (d9 h7))
-                                        (cons   (symbol (d4 h7))  (* t *)
+                                        (cons    sym_t
                                          nil) )
-                                (cons   (cons   (symbol (d4 h7))
+                                (cons   (cons    sym_t
                                         (cons    nil
                                          nil) )
                                  nil) ) )
                          nil) )
-                (cons   (cons   (symbol (d4 h7))
+                (cons   (cons    sym_t
                         (cons    nil
                          nil) )
                  nil) ) )
@@ -25,7 +27,7 @@ Definition defun_and : list :=
  nil) ) ).
 
 (* (label append ( lambda (x y) (cond ((null x) y) (t (cons (car x) (append (cdr x) y))) ))) *)
-Definition defun_append : list :=
+Definition defun_append : expr :=
 (cons    sym_label
 (cons    sym_append
 (cons   (cons    sym_lambda
@@ -38,7 +40,7 @@ Definition defun_append : list :=
                                  nil) )
                         (cons   (symbol (d9 h7))
                          nil) )
-                (cons   (cons   (symbol (d4 h7))
+                (cons   (cons    sym_t
                         (cons   (cons    sym_cons
                                 (cons   (cons    sym_car
                                         (cons   (symbol (d8 h7))
@@ -47,7 +49,7 @@ Definition defun_append : list :=
                                         (cons   (cons    sym_cdr
                                                 (cons   (symbol (d8 h7))
                                                  nil) )
-                                        (cons (symbol (d9 h7))
+                                        (cons 	(symbol (d9 h7))
                                          nil) ) )
                                  nil) ) )
                          nil) )
@@ -56,7 +58,7 @@ Definition defun_append : list :=
  nil) ) ).
 
 (* (label assoc ( lambda (x y) (cond ((eq x (caar y)) (cadar y)) (t (assoc x (cdr y)))) )) *)
-Definition defun_assoc : list :=
+Definition defun_assoc : expr :=
 (cons    sym_label
 (cons    sym_assoc
 (cons   (cons    sym_lambda
@@ -74,7 +76,7 @@ Definition defun_assoc : list :=
                                 (cons   (symbol (d9 h7))
                                  nil) )
                          nil) )
-                (cons   (cons   (symbol (d4 h7))
+                (cons   (cons    sym_t
                         (cons   (cons    sym_assoc
                                 (cons   (symbol (d8 h7))
                                 (cons   (cons    sym_cdr
@@ -87,7 +89,7 @@ Definition defun_assoc : list :=
  nil) ) ).
 
 (* (label caar ( lambda (x) (car (car x)) )) *)
-Definition defun_caar : list :=
+Definition defun_caar : expr :=
 (cons    sym_label
 (cons    sym_caar
 (cons   (cons    sym_lambda
@@ -102,7 +104,7 @@ Definition defun_caar : list :=
  nil) ) ).
 
 (* (label cadar ( lambda (x) (car (cdr (car x))) )) *)
-Definition defun_cadar : list :=
+Definition defun_cadar : expr :=
 (cons    sym_label
 (cons    sym_cadar
 (cons   (cons    sym_lambda
@@ -119,9 +121,9 @@ Definition defun_cadar : list :=
  nil) ) ).
  
 (* (label caddar ( lambda (x) (car (cdr (cdr (car x)))) )) *)
-Definition defun_caddr : list :=
+Definition defun_caddar : expr :=
 (cons    sym_label
-(cons    sym_caddr
+(cons    sym_caddar
 (cons   (cons    sym_lambda
         (cons   (cons   (symbol (d8 h7))
                  nil)
@@ -138,7 +140,7 @@ Definition defun_caddr : list :=
  nil) ) ).
 
 (* (label caddr ( lambda (x) (car (cdr (cdr x))) )) *)
-Definition defun_caddr : list :=
+Definition defun_caddr : expr :=
 (cons    sym_label
 (cons    sym_caddr
 (cons   (cons    sym_lambda
@@ -155,7 +157,7 @@ Definition defun_caddr : list :=
  nil) ) ).
 
 (* (label cadr ( lambda (x) (car (cdr x)) )) *)
-Definition defun_cadr : list :=
+Definition defun_cadr : expr :=
 (cons    sym_label
 (cons    sym_cadr
 (cons   (cons    sym_lambda
@@ -170,53 +172,319 @@ Definition defun_cadr : list :=
  nil) ) ).
 
 (* (label evlis (lambda (m a) (cond ((null m) ()) (t (cons (eval (car m) a) (evlis (cdr m) a)))))) *)
-Definition defun_evlis : list :=
+Definition defun_evlis : expr :=
 (cons   sym_label
 (cons   sym_evlis
 (cons   (cons   sym_lambda
-        (cons   (cons   (symbol (dd h6))  (* m *)
+        (cons   (cons   (symbol (dD h6))  (* m *)
                 (cons   (symbol (d1 h6))  (* a *)
                  nil) )
         (cons   (cons   sym_cond
                 (cons   (cons   (cons   sym_null
-                                (cons   (symbol (dd h6)) 
+                                (cons   (symbol (dD h6)) 
                                  nil) )
                         (cons    nil
                          nil) )
-                (cons   (cons   (symbol (d4 h7))    (* t *)
+                (cons   (cons    sym_t
                         (cons   (cons   sym_cons
                                 (cons   (cons    sym_eval
                                         (cons   (cons    sym_car
-                                                (cons   (symbol (dd h6)) 
+                                                (cons   (symbol (dD h6)) 
                                                  nil) )
                                         (cons   (symbol (d1 h6))
                                          nil) ) )
                                 (cons   (cons    sym_evlis
                                         (cons   (cons    sym_cdr
-                                                (cons   (symbol (dd h6))
+                                                (cons   (symbol (dD h6))
                                                  nil) )
                                         (cons   (symbol (d1 h6))
                                          nil) ) )
                                  nil) ) )
                          nil) )
-                nil) ) )
-        nil) ) )
-nil) ) ).
+                 nil) ) )
+         nil) ) )
+ nil) ) ).
 
-Definition defun_evcon : list :=
-(cons  sym_label   
-(cons  sym_evcon   
-(cons  sym_lambda   
-(cons  (cons  (symbol (d3 h6))   
-              (symbol (d1 h6))
-       )
-       (cons  sym_cond   (cons  (cons  (cons  sym_eval   (cons  (cons  sym_caar   (symbol (d3 h6)) )   (symbol (d1 h6)) ))   (cons  sym_eval   (cons  (cons  sym_cadar   (symbol (d3 h6)) )   (symbol (d1 h6)) )) )   (cons  (cons  sym_quote   (symbol (d4 h7)) )   (cons  sym_evcon   (cons  (cons  sym_cdr   (symbol (d3 h6)) )   (symbol (d1 h6)) )) ) )) )) )).
+(* (label evcon (lambda (c a) (cond
+        ((eval (caar c) a) (eval (cadar c) a))
+        ( t                (evcon (cdr c) a))
+ *)
+Definition defun_evcon : expr :=
+(cons    sym_label   
+(cons    sym_evcon   
+(cons   (cons    sym_lambda   
+        (cons   (cons   (symbol (d3 h6))    (* c *)
+                (cons   (symbol (d1 h6))    (* a *)
+                 nil) )
+        (cons   (cons    sym_cond
+                (cons   (cons   (cons    sym_eval
+                                (cons   (cons    sym_caar   
+                                        (cons   (symbol (d3 h6))
+                                         nil) )
+                                (cons   (symbol (d1 h6))
+                                 nil) ) )
+                        (cons   (cons    sym_eval
+                                (cons   (cons    sym_cadar
+                                        (cons   (symbol (d3 h6))
+                                         nil) )
+                                (cons   (symbol (d1 h6))
+                                 nil) ) )
+                         nil) )
+                (cons   (cons    sym_t
+                        (cons   (cons    sym_evcon
+                                (cons   (cons    sym_cdr
+                                        (cons   (symbol (d3 h6))
+                                         nil) )
+                                (cons   (symbol (d1 h6))
+                                 nil) ) )
+                         nil) )
+                 nil) ) )
+         nil) ) )
+ nil) ) ).
 
-Definition defun_eval : list :=
-(cons  sym_label   (cons  sym_eval   (cons  sym_lambda   (cons  (cons  (symbol (d5 h6))   (symbol (d1 h6)) )   (cons  sym_cond   (cons  (cons  (cons  sym_atom   (symbol (d5 h6)) )   (cons  sym_assoc   (cons  (symbol (d5 h6))   (symbol (d1 h6)) )) )   (cons  (cons  (cons  sym_atom   (cons  sym_car   (symbol (d5 h6)) ) )   (cons  sym_cond   (cons  (cons  (cons  sym_eq   (cons  (cons  sym_car   (symbol (d5 h6)) )   (cons  sym_quote   sym_quote ) ))   (cons  sym_cadr   (symbol (d5 h6)) ) )   (cons  (cons  (cons  sym_eq   (cons  (cons  sym_car   (symbol (d5 h6)) )   (cons  sym_quote   sym_atom ) ))   (cons  sym_atom   (cons  sym_eval   (cons  (cons  sym_cadr   (symbol (d5 h6)) )   (symbol (d1 h6)) )) ) )   (cons  (cons  (cons  sym_eq   (cons  (cons  sym_car   (symbol (d5 h6)) )   (cons  sym_quote   sym_eq ) ))   (cons  sym_eq   (cons  (cons  sym_eval   (cons  (cons  sym_cadr   (symbol (d5 h6)) )   (symbol (d1 h6)) ))   (cons  sym_eval   (cons  (cons  sym_caddr   (symbol (d5 h6)) )   (symbol (d1 h6)) )) )) )   (cons  (cons  (cons  sym_eq   (cons  (cons  sym_car   (symbol (d5 h6)) )   (cons  sym_quote   sym_car ) ))   (cons  sym_car   (cons  sym_eval   (cons  (cons  sym_cadr   (symbol (d5 h6)) )   (symbol (d1 h6)) )) ) )   (cons  (cons  (cons  sym_eq   (cons  (cons  sym_car   (symbol (d5 h6)) )   (cons  sym_quote   sym_cdr ) ))   (cons  sym_cdr   (cons  sym_eval   (cons  (cons  sym_cadr   (symbol (d5 h6)) )   (symbol (d1 h6)) )) ) )   (cons  (cons  (cons  sym_eq   (cons  (cons  sym_car   (symbol (d5 h6)) )   (cons  sym_quote   sym_cons ) ))   (cons  sym_cons   (cons  (cons  sym_eval   (cons  (cons  sym_cadr   (symbol (d5 h6)) )   (symbol (d1 h6)) ))   (cons  sym_eval   (cons  (cons  sym_caddr   (symbol (d5 h6)) )   (symbol (d1 h6)) )) )) )   (cons  (cons  (cons  sym_eq   (cons  (cons  sym_car   (symbol (d5 h6)) )   (cons  sym_quote   sym_cond ) ))   (cons  sym_evcon   (cons  (cons  sym_cdr   (symbol (d5 h6)) )   (symbol (d1 h6)) )) )   (cons  (cons  sym_quote   (symbol (d4 h7)) )   (cons  sym_eval   (cons  (cons  sym_cons   (cons  (cons  sym_assoc   (cons  (cons  sym_car   (symbol (d5 h6)) )   (symbol (d1 h6)) ))   (cons  sym_cdr   (symbol (d5 h6)) ) ))   (symbol (d1 h6)) )) ) )))))))) )   (cons  (cons  (cons  sym_eq   (cons  (cons  sym_caar   (symbol (d5 h6)) )   (cons  sym_quote   sym_lambda ) ))   (cons  sym_eval   (cons  (cons  sym_caddar   (symbol (d5 h6)) )   (cons  sym_append   (cons  (cons  sym_pair   (cons  (cons  sym_cadar   (symbol (d5 h6)) )   (cons  sym_evlis   (cons  (cons  sym_cdr   (symbol (d5 h6)) )   (symbol (d1 h6)) )) ))   (symbol (d1 h6)) )) )) )   (cons  (cons  sym_eq   (cons  (cons  sym_caar   (symbol (d5 h6)) )   (cons  sym_quote   sym_label ) ))   (cons  sym_eval   (cons  (cons  sym_cons   (cons  (cons  sym_caddar   (symbol (d5 h6)) )   (cons  sym_cdr   (symbol (d5 h6)) ) ))   (cons  sym_cons   (cons  (cons  sym_list   (cons  (cons  sym_cadar   (symbol (d5 h6)) )   (cons  sym_car   (symbol (d5 h6)) ) ))   (symbol (d1 h6)) )) )) ) )))) )) )).
+(* (label eval (lambda (m a) (cond 
+    ((atom m) (assoc m a))
+    ((atom (car m)) (cond
+        ((eq (car m) (quote quote)) (cadr m))
+        ((eq (car m) (quote atom)) (atom (eval (cadr m) a)))
+        ((eq (car m) (quote eq)) (eq (eval (cadr m) a) (eval (caddr m) a)))
+        ((eq (car m) (quote car)) (car (eval (cadr m) a)))
+        ((eq (car m) (quote cdr)) (cdr (eval (cadr m) a)))
+        ((eq (car m) (quote cons)) (cons (eval (cadr m) a) (eval (caddr m) a)))
+        ((eq (car m) (quote cond)) (evcon (cdr m) a))
+        ( t                       (eval (cons (assoc (car m) a) (cdr m)) a))
+    ...
+ *)
+Definition defun_eval : expr :=
+(cons    sym_label
+(cons    sym_eval
+(cons   (cons    sym_lambda
+        (cons   (cons   (symbol (d5 h6))    (* m *)
+                (cons   (symbol (d1 h6))    (* a *)
+                 nil) )
+        (cons   (cons    sym_cond
+                (cons   (cons   (cons    sym_atom
+                                (cons   (symbol (d5 h6))
+                                 nil) )
+                        (cons   (cons    sym_assoc   
+                                (cons   (symbol (d5 h6))   
+                                (cons   (symbol (d1 h6))
+                                 nil) ) )
+                         nil) )
+                (cons   (cons   (cons    sym_atom
+                                (cons   (cons    sym_car   
+                                        (cons   (symbol (d5 h6))
+                                         nil) )
+                                 nil) )
+                        (cons   (cons    sym_cond
+                                (cons   (cons   (cons    sym_eq   
+                                                (cons   (cons    sym_car   
+                                                        (cons   (symbol (d5 h6))
+                                                         nil) )
+                                                (cons   (cons    sym_quote
+                                                        (cons    sym_quote
+                                                         nil) )
+                                                 nil) ) )
+                                        (cons   (cons    sym_cadr   
+                                                (cons   (symbol (d5 h6))
+                                                 nil) )
+                                         nil) )
+                                (cons   (cons   (cons    sym_eq
+                                                (cons   (cons    sym_car
+                                                        (cons   (symbol (d5 h6))
+                                                         nil) )
+                                                (cons   (cons    sym_quote
+                                                        (cons    sym_atom
+                                                         nil) )
+                                                 nil) ) )
+                                        (cons   (cons    sym_atom
+                                                (cons   (cons    sym_eval
+                                                        (cons   (cons    sym_cadr
+                                                                (cons   (symbol (d5 h6))
+                                                                 nil) )
+                                                        (cons   (symbol (d1 h6))
+                                                         nil) ) )
+                                                 nil) )
+                                         nil) )
+                                (cons   (cons   (cons    sym_eq
+                                                (cons   (cons    sym_car
+                                                        (cons   (symbol (d5 h6))
+                                                         nil) )
+                                                (cons   (cons    sym_quote
+                                                        (cons    sym_eq
+                                                         nil) )
+                                                 nil) ) )
+                                        (cons   (cons    sym_eq
+                                                (cons   (cons    sym_eval
+                                                        (cons   (cons    sym_cadr
+                                                                (cons   (symbol (d5 h6))
+                                                                 nil) )
+                                                        (cons   (symbol (d1 h6))
+                                                         nil) ) )
+                                                (cons   (cons    sym_eval
+                                                        (cons   (cons    sym_caddr   
+                                                                (cons   (symbol (d5 h6))
+                                                                 nil) )
+                                                        (cons   (symbol (d1 h6))
+                                                         nil) ) )
+                                                 nil) ) )
+                                         nil) )
+                                (cons   (cons   (cons    sym_eq
+                                                (cons   (cons    sym_car   
+                                                        (cons   (symbol (d5 h6))
+                                                         nil) )
+                                                (cons   (cons    sym_quote
+                                                        (cons    sym_car
+                                                         nil) )
+                                                 nil) ) )
+                                        (cons   (cons    sym_car
+                                                (cons   (cons    sym_eval
+                                                        (cons   (cons    sym_cadr
+                                                                (cons   (symbol (d5 h6))
+                                                                 nil) )
+                                                        (cons   (symbol (d1 h6))
+                                                         nil) ) )
+                                                 nil) )
+                                         nil) )
+                                (cons   (cons   (cons    sym_eq   
+                                                (cons   (cons    sym_car   
+                                                        (cons   (symbol (d5 h6))
+                                                         nil) )
+                                                (cons   (cons    sym_quote
+                                                        (cons    sym_cdr
+                                                         nil) )
+                                                 nil) ) )
+                                        (cons   (cons    sym_cdr   
+                                                (cons   (cons    sym_eval   
+                                                        (cons   (cons    sym_cadr   
+                                                                (cons   (symbol (d5 h6))
+                                                                 nil) ) 
+                                                        (cons   (symbol (d1 h6))
+                                                         nil) ) )
+                                                 nil) )
+                                         nil) )
+                                (cons   (cons   (cons    sym_eq   
+                                                (cons   (cons    sym_car   
+                                                        (cons   (symbol (d5 h6))
+                                                         nil) )
+                                                (cons   (cons    sym_quote   
+                                                        (cons    sym_cons
+                                                         nil) )
+                                                 nil) ) )
+                                        (cons   (cons    sym_cons   
+                                                (cons   (cons    sym_eval   
+                                                        (cons   (cons    sym_cadr   
+                                                                (cons   (symbol (d5 h6))
+                                                                 nil) )
+                                                        (cons   (symbol (d1 h6))
+                                                         nil) ) )
+                                                (cons   (cons    sym_eval   
+                                                        (cons   (cons    sym_caddr   
+                                                                (cons   (symbol (d5 h6))
+                                                                 nil) )
+                                                        (cons   (symbol (d1 h6))
+                                                         nil) ) )
+                                                 nil) ) )
+                                         nil) )
+                                (cons   (cons   (cons    sym_eq   
+                                                (cons   (cons    sym_car   
+                                                        (cons   (symbol (d5 h6)) 
+                                                         nil) )
+                                                (cons   (cons    sym_quote   
+                                                        (cons    sym_cond 
+                                                         nil) )
+                                                 nil) ) )
+                                        (cons   (cons    sym_evcon   
+                                                (cons   (cons    sym_cdr   
+                                                        (cons   (symbol (d5 h6)) 
+                                                         nil) )
+                                                (cons   (symbol (d1 h6)) 
+                                                 nil) ) )
+                                         nil) )
+                                (cons   (cons   (cons    sym_quote   
+                                                (cons    sym_t 
+                                                 nil) )
+                                        (cons   (cons    sym_eval   
+                                                (cons   (cons    sym_cons   
+                                                        (cons   (cons    sym_assoc   
+                                                                (cons   (cons    sym_car   
+                                                                        (cons   (symbol (d5 h6))
+                                                                         nil) )
+                                                                (cons   (symbol (d1 h6))
+                                                                 nil) ) )
+                                                        (cons   (cons    sym_cdr
+                                                                (cons   (symbol (d5 h6))
+                                                                 nil) )
+                                                         nil) ) )
+                                                (cons   (symbol (d1 h6))
+                                                 nil) ) )
+                                         nil) )
+                                 nil) ) ) ) ) ) ) ) )
+                         nil) )
+                (cons   (cons   (cons    sym_eq
+                                (cons   (cons    sym_caar
+                                        (cons   (symbol (d5 h6))
+                                         nil) )
+                                (cons   (cons    sym_quote
+                                        (cons    sym_lambda
+                                         nil) )
+                                 nil) ) )
+                        (cons   (cons    sym_eval   
+                                (cons   (cons    sym_caddar   
+                                        (cons   (symbol (d5 h6))
+                                         nil) )
+                                (cons   (cons    sym_append
+                                        (cons   (cons    sym_pair   
+                                                (cons   (cons    sym_cadar
+                                                        (cons   (symbol (d5 h6))
+                                                         nil) )
+                                                (cons   (cons    sym_evlis
+                                                        (cons   (cons    sym_cdr
+                                                                (cons   (symbol (d5 h6))
+                                                                 nil) )
+                                                        (cons   (symbol (d1 h6))
+                                                         nil) ) )
+                                                 nil) ) )
+                                        (cons   (symbol (d1 h6))
+                                         nil) ) )
+                                  nil) ) )
+                         nil) )
+                (cons   (cons   (cons    sym_eq   
+                                (cons   (cons    sym_caar   
+                                        (cons   (symbol (d5 h6))
+                                         nil) )
+                                (cons   (cons    sym_quote   
+                                        (cons    sym_label
+                                         nil) )
+                                 nil) ) )
+                        (cons   (cons    sym_eval   
+                                (cons   (cons    sym_cons   
+                                        (cons   (cons    sym_caddar   
+                                                (cons   (symbol (d5 h6))
+                                                 nil) )
+                                        (cons   (cons    sym_cdr   
+                                                (cons   (symbol (d5 h6))
+                                                 nil) )
+                                         nil) ) )
+                                (cons   (cons    sym_cons   
+                                        (cons   (cons    sym_list   
+                                                (cons   (cons    sym_cadar   
+                                                        (cons   (symbol (d5 h6))
+                                                         nil) )
+                                                (cons   (cons    sym_car   
+                                                        (cons   (symbol (d5 h6))
+                                                         nil) )
+                                                 nil) ) )
+                                        (cons   (symbol (d1 h6))
+                                         nil) ) )
+                                 nil) ) )
+                         nil) )
+                 nil) ) ) ) )
+         nil) ) )
+ nil) ) ).
 
 (* (label list ( lambda (x y) (cons x (cons y ())) )) *)
-Definition defun_list : list :=
+Definition defun_list : expr :=
 (cons    sym_label
 (cons    sym_list
 (cons   (cons    sym_lambda
@@ -234,7 +502,7 @@ Definition defun_list : list :=
  nil) ) ).
 
 (* (label not ( lambda (x) (cond (x ()) (t t)) )) *)
-Definition defun_not : list :=
+Definition defun_not : expr :=
 (cons    sym_label
 (cons    sym_not
 (cons   (cons    sym_lambda
@@ -244,15 +512,15 @@ Definition defun_not : list :=
                 (cons   (cons   (symbol (d8 h7))
                         (cons    nil
                          nil))
-                (cons   (cons   (symbol (d4 h7))
-                        (cons   (symbol (d4 h7))
+                (cons   (cons    sym_t
+                        (cons    sym_t
                          nil) )
                  nil) ) )
          nil) ) )
  nil) ) ).
 
 (* (label null ( lambda (x) (eq x ()) )) *)
-Definition defun_null : list :=
+Definition defun_null : expr :=
 (cons    sym_label
 (cons    sym_null
 (cons   (cons    sym_lambda
@@ -271,7 +539,7 @@ Definition defun_null : list :=
 (label pair ( lambda (x y) (cond ((null (cdr x)) (list (car x) (car y)))
                                  (    t    (cons (list (car x) (car y)) (pair (cdr x) (cdr y)))) )))
 *)
-Definition defun_pair : list :=
+Definition defun_pair : expr :=
 (cons    sym_label
 (cons    sym_pair
 (cons   (cons    sym_lambda
@@ -279,23 +547,47 @@ Definition defun_pair : list :=
                 (cons   (symbol (d9 h7))
                  nil) )
         (cons   (cons    sym_cond
-                (cons   (cons  (cons  sym_and   (cons  (cons  sym_null   (symbol (d8 h7)) )   (cons  sym_null   (symbol (d9 h7)) ) ))   (cons  sym_quote   nil  ) )   (cons  (cons  sym_and   (cons  (cons  sym_not   (cons  sym_atom   (symbol (d8 h7)) ) )   (cons  sym_not   (cons  sym_atom   (symbol (d9 h7)) ) ) ))
-
-(cons    sym_cons   
-(cons   (cons    sym_list
-        (cons   (cons    sym_car
-                (cons   (symbol (d8 h7))
-                 nil) )
-        (cons   (cons    sym_car
-                (cons   (symbol (d9 h7))
-                 nil) )
+                (cons   (cons   (cons    sym_and
+                                (cons   (cons    sym_null
+                                        (cons   (symbol (d8 h7))
+                                         nil) )
+                                (cons   (cons    sym_null   
+                                        (cons   (symbol (d9 h7))
+                                         nil) )
+                                 nil) ) )
+                        (cons    nil
+                         nil) )
+                (cons   (cons   (cons    sym_and
+                                (cons   (cons    sym_not
+                                        (cons   (cons    sym_atom   
+                                                (cons   (symbol (d8 h7))
+                                                 nil) )
+                                         nil) )
+                                (cons   (cons    sym_not
+                                        (cons   (cons    sym_atom
+                                                (cons   (symbol (d9 h7))
+                                                 nil) )
+                                         nil) )
+                                 nil) ) )
+                        (cons   (cons    sym_cons   
+                                (cons   (cons    sym_list
+                                        (cons   (cons    sym_car
+                                                (cons   (symbol (d8 h7))
+                                                 nil) )
+                                        (cons   (cons    sym_car
+                                                (cons   (symbol (d9 h7))
+                                                 nil) )
+                                         nil) ) )
+                                (cons   (cons    sym_pair 
+                                        (cons   (cons    sym_cdr
+                                                (cons   (symbol (d8 h7))
+                                                 nil) )
+                                        (cons   (cons    sym_cdr
+                                                (cons   (symbol (d9 h7))
+                                                 nil) )
+                                         nil) ) )
+                                 nil) ) )
+                         nil) )
+                 nil) ) )
          nil) ) )
-(cons   (cons    sym_pair 
-        (cons   (cons    sym_cdr
-                (cons   (symbol (d8 h7))
-                 nil) )
-        (cons   (cons    sym_cdr
-                (cons   (symbol (d9 h7))
-                 nil) )
-         nil) ) )
- nil) ) )
+ nil) ) ).
