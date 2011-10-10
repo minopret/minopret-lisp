@@ -39,7 +39,7 @@ Require Export hex.
 Require Export list.
 
 
-Definition vcaar (x : list) : @option list :=
+Definition vcaar (x : expr) : @option expr :=
 match x with
 | nil => None
 | symbol _ => None
@@ -50,7 +50,7 @@ match x with
   end
 end.
 
-Definition vcadr (x : list) : @option list :=
+Definition vcadr (x : expr) : @option expr :=
 match x with
 | nil => None
 | symbol _ => None
@@ -91,7 +91,7 @@ match x with
   end
 end.
 
-Compute (vcadar (cons (cons (symbol hA) (cons (symbol hB) nil)) (cons (symbol hC) nil))).
+(* Compute (vcadar (cons (cons (symbol hA) (cons (symbol hB) nil)) (cons (symbol hC) nil))). *)
 
 
 Definition eq (x y: list) : list :=
@@ -103,22 +103,9 @@ match x with
   end
 | symbol n => match y with
   | nil => nil
-  | symbol m => ...
+  | symbol m => if beq_hex n m then sym_t else nil
   | cons _ _ => nil
   end
 | cons _ _ => nil
 end.
 
-
-
-
-Definition label_caar : list :=
-  cons sym_label (cons sym_caar (cons
-    (cons sym_lambda (cons
-      (cons (symbol (d1 h6)) nil)
-      (cons
-        (cons sym_car (cons
-          (cons sym_car (cons (symbol (d1 h6)) nil))
-          nil))
-        nil)))
-     nil)).
