@@ -74,6 +74,15 @@ and (and (feq (fand (fand a b) c) (fand (fand b c) a))
 
 (* Been wondering, how would I define a type for
 models of the two-element boolean algebra? *)
+Inductive boolean_algebra_2 {X: Type}
+    (f t: X) (feq: X -> X -> Prop) (fand: X -> X -> X) (fnot: X -> X) : Type :=
+| mk_boolean_2: forall a b c : X,
+    feq (fand (fand a b) c) (fand (fand b c) a) ->
+    feq (fand (fnot a) a) f ->
+    not (t = f) ->
+    feq (fand a t) a ->
+    feq (fand a (fnot (fand a b))) (fand a (fnot b)) ->
+    boolean_algebra_2 f t feq fand fnot.
 
 
 Theorem boolean_algebra_for_Prop :
