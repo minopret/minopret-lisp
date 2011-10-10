@@ -22,8 +22,12 @@
     ((equal x y) t)
     (t (append (list 'Expecting y) (list 'found x))) )))
 
-; Here's a quick way to generalize the binary operations to n-ary operations.
-; Standard: Scheme programming language.
+
+
+
+
+; Here's a quick way to generalize binary operations to n-ary operations.
+; Standard: Scheme programming language "fold".
 ; This is not yet tested.
 (label fold-left (lambda (f z u) (cond
     ((null u) z)
