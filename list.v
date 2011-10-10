@@ -7,21 +7,41 @@ Inductive option {X: Type} : Type :=
 
 (* Time to start defining Lisp data. *)
 
-Inductive expr : Type :=
-| nil : expr
-| symbol : hex -> expr
-| cons : expr -> expr -> expr.
+(* Ideally I'd like an "is-a" type structure as follows:
 
-Definition car (x : expr) : @option expr :=
+        (symbol hex)
+                     \
+                      => atom
+                     /        \
+                nil =          => expr
+                     \        /
+                      => list 
+                     /
+    (cons expr list) 
+
+    That is currently equivalent to the following:
+
+        (symbol hex) = nonlist
+                               \
+                nil ------------=> expr
+                               /
+    (cons expr list) = nonatom
+*)
+
+Inductive expr : Type :=
+| nil    :                 expr
+| symbol :          hex -> expr
+| cons   : expr -> expr -> expr.
+
+Definition car (x : cons) : @option expr :=
 match x with
-| nil => None
-| symbol _ => None
-| cons u _ => Some u
+| nil | symbol _ => None
+|       cons u _ => Some u
 end.
 
 Definition cdr (x: expr) : @option expr :=
 match x with
-| nil => Some nil
+| nil      => Some nil
 | symbol _ => None
 | cons _ v => Some v
 end.
@@ -30,15 +50,13 @@ Definition sym_t : expr := symbol (d4 h7).
 
 Definition atom (x: expr) : expr :=
 match x with
-| nil => sym_t
-| symbol _ => sym_t
-| cons _ _ => nil
+| nil | symbol _ => sym_t
+| cons _ _       => nil
 end.
 
 (* Fixpoint cond (x: expr) : @option expr :=
 match x with
-| nil => None
-| symbol _ => None
+| nil | symbol _ => None
 | cons u v => *)
 
 (*
@@ -46,7 +64,7 @@ match x with
 
     0 1 2 3 4 5 6 7 8 9 A B C D E F
 
-2     ! ''# $ % & ' ( ) * + , - . /
+2     ! " # $ % & ' ( ) * + , - . /   "
 3   0 1 2 3 4 5 6 7 8 9 : ; < = > ?
 4   @ A B C D E F G H I J K L M N O
 5   P Q R S T U V W X Y Z [ \ ] ^ _
