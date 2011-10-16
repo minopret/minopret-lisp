@@ -4,9 +4,12 @@
 # Aaron Mansheim, 2011-09-22
 
 
+from mnpexpr import Expr
+
+
 # Parses a sequence of Lisp s-expressions.
 # More-or-less follows Peter Norvig's in his lis.py.
-def string_to_tuple(s):
+def string_to_expr(s):
     tokens = tokenize(s)
     
     r = []
@@ -15,7 +18,7 @@ def string_to_tuple(s):
         (s, q) = wrinkle(tokens)
         r.append(s)
         tokens = tokens[q:]
-    return tuple(r)
+    return Expr(r)
  
 def tokenize(s):
     from re import sub, M
@@ -25,7 +28,7 @@ def tokenize(s):
     
     s = s.replace('(', '( ')
     s = s.replace(')', ' )')
-    return tuple(s.split())
+    return Expr(s.split())
 
 def wrinkle(tokens):
     """Returns first symbol or sublist and the number of tokens read."""
@@ -51,7 +54,7 @@ def wrinkle(tokens):
         if p < len(tokens):  # and therefore tokens[p] == ')'
             p += 1
             if t == "'(":
-                r = ('quote', tuple(r))
+                r = Expr(('quote', Expr(r), ))
         else:
             raise SyntaxError('Missing right paren')
     elif t == ')':
@@ -63,15 +66,15 @@ def wrinkle(tokens):
         raise SyntaxError('Extra right paren')
     else:
         if t[0] == "'" and len(t) > 1:
-            r = ('quote', t[1:])
+            r = Expr(('quote', t[1:], ))
         else:
             r = t
         p += 1
     if isinstance(r, list):
-        r = tuple(r)
+        r = Expr(r)
     return (r, p)
 
 def read_exprs(prompt='Press Ctrl-D on a new line to exit> '):
     prog = raw_input(prompt)
-    return string_to_tuple(prog)
+    return string_to_expr(prog)
 
