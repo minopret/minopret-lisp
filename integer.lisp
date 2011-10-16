@@ -1,14 +1,10 @@
-; Hexadecimal in classic (but lower-case) Lisp without
-; using native numbers.
-; Hexadecimal, partly because that's a pretty common way to handle
-; ASCII and UTF-8.
-; Without using native numbers, um, for fun??
+; Arithmetic in classic (but lower-case) Lisp without using native numbers.
+; Why without using native numbers? Um, for fun??
 ;
 ; And I heard that balanced ternary is nice (base 3 with digits -1 0 1
-; instead of 0 1 2). So let's try doing hex math by converting back and
-; forth with balanced ternary!
+; instead of 0 1 2). So let's try doing math in balanced ternary!
 ;
-; And I also have conversion back and forth with decimal and balanced base-81.
+; Ideally I'll also want conversion back and forth with decimal and hexadecimal.
 ;
 ; Representation: A balanced-ternary number is represented
 ; as a list whose elements are from the three atoms (+ 0 -).
@@ -16,7 +12,9 @@
 ; one digit. Digits are listed from most to least significant.
 ;
 ; Useful functions so far:
+; trit4_to_bal81 bal81_to_trit4
 ; bal3_neg bal3_minus bal3_add bal3_mult bal3_lt bal3_gt
+; hex_to_bit4 bit4_to_hex
 ;
 ; Aaron Mansheim, 2011-09-24
 
@@ -24,97 +22,6 @@
 ; I suppose a Makefile or scons that causes the required
 ; file to be concatenated on stdin to mnplisp.py would be
 ; good enough for a start.
-
-
-
-; hex_mult_3: This would assist computing a ternary digit value
-; a_i*3^i in hex. Using this table, it's easy:
-;   1 3 9 1B 51 F3 2D9 88B 19A1 4CE3 ...
-; Just requires the ability to carry lead digits 0, 1, & 2 from this table.
-; But to sum up a ternary number (a_i * 3^i) would require the ability to
-; add any hex digits together. The most obvious implementation needs
-; a 120-entry table.
-
-; So, hmm, maybe for bal3_to_hex I'll do something cleverer than
-; simply adding up a_i * 3^i. I'll file away the fact that each
-; nonnegative number up to +++ (bal 3) = D (base 16) fits in one hex digit.
-
-(label hex_mult_3 (lambda (x) (assoc x '(
-    (0 (0 0))  (1 (0 3))  (2 (0 6))  (3 (0 9))
-    (4 (0 C))  (5 (0 F))  (6 (1 2))  (7 (1 5))
-    (8 (1 8))  (9 (1 B))  (A (1 E))  (B (2 1))
-    (C (2 4))  (D (2 7))  (E (2 A))  (F (2 D)) ))))
-
-; for carrying or incrementing
-(label hex_add_1 (lambda (x) (assoc x '(
-    (0 (0 1))  (1 (0 2))  (2 (0 3))  (3 (0 4))
-    (4 (0 5))  (5 (0 6))  (6 (0 7))  (7 (0 8))
-    (8 (0 9))  (9 (0 A))  (A (0 B))  (B (0 C))
-    (C (0 D))  (D (0 E))  (E (0 F))  (F (1 0)) ))))
-
-; for carrying
-(label hex_add_2 (lambda (x) (assoc x '(
-    (0 (0 2))  (1 (0 3))  (2 (0 4))  (3 (0 5))
-    (4 (0 6))  (5 (0 7))  (6 (0 8))  (7 (0 9))
-    (8 (0 A))  (9 (0 B))  (A (0 C))  (B (0 D))
-    (C (0 E))  (D (0 F))  (E (1 0))  (F (1 1)) ))))
-
-; 16 (base 10) = 27 - 9 - 3 + 1 (base 10) = + - - + (bal 3)
-(label trit_mult_16 (lambda (x) (assoc x '(
-    (+ (+ - - +))  (0 (0 0 0 0))  (- (- + + -)) ))))
-
-; Add two hex numbers by reducing to balanced ternary arithmetic.
-(label hex_add (lambda (x y)
-    (bal3_to_hex (bal3_add (hex_to_bal3 x) (hex_to_bal3 y))) ))
-
-; TODO hex_to_bal3, bal3_to_hex
-
-; Example: 16 (base 10) = + - - + (bal 3),
-; so 256 (base 10) = (+ - - + 0 0 0)
-;                    + (- + + - 0 0)
-;                      + (- + + - 0)
-;                        + (+ - - +)
-;                   = 0 + 0 0 + + + (bal 3) = 243 + 9 + 3 + 1 = 256 (base 10)
-; Example: 1488 (base 10) = 5D0 (base 16)
-;  = (0 + - -)*(+ - - +)*(+ - - +) + (0 + + +)*(+ - - +) (bal 3)
-;  = (0 + - -)*(+ 0 0 + + +) + (+ 0 - - 0 +)
-;  = (+ - - + - + + -) + (+ 0 - - 0 +)
-;  =  + - 0 0 + 0 + 0  (bal 3) = 2187 - 729 + 27 + 3 = 1488 (base 10)
-(label hex_to_trit (lambda (x) (assoc x '(
-    (0 (0 0 0 0))  (1 (0 0 0 +))  (2 (0 0 + -))
-    (3 (0 0 + 0))  (4 (0 0 + +))  (5 (0 + - -))
-    (6 (0 + - 0))  (7 (0 + - +))  (8 (0 + 0 -))
-    (9 (0 + 0 0))  (A (0 + 0 +))  (B (0 + + -))
-    (C (0 + + 0))  (D (0 + + +))  (E (+ - - -))
-    (F (+ - - 0)) ))))
-
-
-
-; I suppose we'll want decimal too.
-; 10 (base 10) = + 0 + (bal 3).
-; 3^i = 1 3 9 27 81 243 729 2187 6561 19683 ... (base 10).
-; Example: 1488 (base 10) = 2187 - 729 + 27 + 3 = + - 0 0 + 0 + 0 (bal 3).
-(label decimal_mult_3 (lambda (x) (assoc x '(
-    (0 (0 0))  (1 (0 3))  (2 (0 6))  (3 (0 9))  (4 (1 2))  
-    (5 (1 5))  (6 (1 8))  (7 (2 1))  (8 (2 4))  (9 (2 7)) ))))
-
-(label trit_to_decimal (lambda (x) (trit_to_hex x)))
-
-(label decimal_to_trit (lambda (x) (cdr (hex_to_trit x))))
-
-; 10 (base 10) = 9 + 1 (base 10) = + 0 + (bal 3)
-; Example: 1488 (base 10)
-; = (+ + 0 + 0 0 +) + (+ - - 0 - + +) + (+ 0 0 0 -) + (+ 0 -)
-(label trit_mult_10 (lambda (x) (assoc x '(
-    (+ (+ 0 +))
-    (0 (0 0 0))
-    (- (- 0 -)) ))))
-
-; Add two decimal numbers by reducing to balanced ternary arithmetic.
-(label add (lambda (x y) (bal3_to_decimal
-    (bal3_add (decimal_to_bal3 x) (decimal_to_bal3 y)) )))
-
-; TODO decimal_to_bal3, bal3_to_decimal
 
 
 
@@ -189,6 +96,19 @@
 (> (+ + + -)) (/ (+ + + 0)) (+ (+ + + +)) ))))
 
 
+; Similarly, for binary we'll want the compactness and familiarity of hexadecimal.
+(label hex_to_bit4 (lambda (x) (assoc x '(
+(0 (0 0 0 0)) (1 (0 0 0 1)) (2 (0 0 1 0)) (3 (0 0 1 1))
+(4 (0 1 0 0)) (5 (0 1 0 1)) (6 (0 1 1 0)) (7 (0 1 1 1))
+(8 (1 0 0 0)) (9 (1 0 0 1)) (A (1 0 1 0)) (B (1 0 1 1))
+(C (1 1 0 0)) (D (1 1 0 1)) (E (1 1 1 0)) (F (1 1 1 1)) ))))
+
+(label bit4_to_hex (lambda (x) (assoc-equal x '(
+((0 0 0 0) 0) ((0 0 0 1) 1) ((0 0 1 0) 2) ((0 0 1 1) 3)
+((0 1 0 0) 4) ((0 1 0 1) 5) ((0 1 1 0) 6) ((0 1 1 1) 7)
+((1 0 0 0) 8) ((1 0 0 1) 9) ((1 0 1 0) A) ((1 0 1 1) B)
+((1 1 0 0) C) ((1 1 0 1) D) ((1 1 1 0) E) ((1 1 1 1) F) ))))
+
 
 ; Balanced-ternary subtraction reduces easily to addition.
 
@@ -199,6 +119,32 @@
         (t   (cons (trit_neg (car x)) (bal3_neg (cdr x)))) )))
 
 (label bal3_minus (lambda (x y) (bal3_add x (bal3_neg y))))
+
+
+
+; Unsigned binary subtraction will be zero when the minuend is greater.
+; No implementation yet.
+
+; The predecessor function for unsigned arbitrary-precision binary numbers.
+; Here we pay a price for storing the most-significant bit first.
+(label bin_pred (lambda (x) (cond
+    ((eq x '(0)) '(0))
+    (         t  (cadr (bin_pred_rec x))) )))
+
+; Params: binary number, as non-empty list of Lisp truth values, most-significant bit first
+; Return: pair of borrow bit and lower result
+(label bin_pred_rec (lambda (x) (cond
+    ((eq x '(0)) '(0 (0)))
+    ((eq x '(1)) '(0 (0)))
+    (         t  (bin_pred_borrow (car x) (bin_pred_rec (cdr x)))) )))
+
+; Params: x, a Lisp truth value representing a more-significant bit
+;         y, a pair of borrow bit and lower result
+; Return: pair of borrow bit and lower result
+(label bin_pred_borrow (lambda (x y) (cond
+    ((eq (car y) '0) (list '0 (cons x (cdr y))))
+    ((eq      x  '1) (list '0 (cons '0 (cdr y))))
+    (             t  (list '1 (cons '1 (cdr y)))) )))
 
 
 
@@ -213,47 +159,77 @@
 (label bal3_lt (lambda (x y) (bal3_lt0 (bal3_minus x y))))
 (label bal3_gt (lambda (x y) (bal3_gt0 (bal3_minus x y))))
 
+; (Unsigned) binary comparison must really go bit by bit.
+
+
+
 ; So, balanced-ternary addition. Right.
 
-; Add balanced-ternary digits, respecting a negative carry digit.
+;(label trit_add (lambda (x y c) (assoc-equal (cons x (list y c))
+;'(((- - -) (- 0))  ((- - 0) (- +))  ((- - +) (0 -))
+;  ((- 0 -) (- +))  ((- 0 0) (0 -))  ((- 0 +) (0 0))
+;  ((- + -) (0 -))  ((- + 0) (0 0))  ((- + +) (0 +))
+; ;               //               //
+;  ((0 - -) (- +))  ((0 - 0) (0 -))  ((0 - +) (0 0))
+;  ((0 0 -) (0 -))  ((0 0 0) (0 0))  ((0 0 +) (0 +))
+;  ((0 + -) (0 0))  ((0 + 0) (0 +))  ((0 + +) (+ -))
+; ;               //               //
+;  ((+ - -) (0 -))  ((+ - 0) (0 0))  ((+ - +) (0 +))
+;  ((+ 0 -) (0 0))  ((+ 0 0) (0 +))  ((+ 0 +) (+ -))
+;  ((+ + -) (0 +))  ((+ + 0) (+ -))  ((+ + +) (+ 0)) ) )))
 
-(label trit_add- (lambda (x y) (cond (     (eq x '+)  (list '0 y))
-                                     (     (eq y '+)  (list '0 x))
-                                     ((not (eq x y)) '(- +))
-                                     (     (eq x '0) '(0 -))
-                                     (            t  '(- 0)) )))
+;                 0 0 +          : negate
+;                 0 + 0          : negate
+;         0 + +   - + +   0 + -  : negate
+;         + 0 +   + - +   + - 0  : negate
 
-(label trit_add (lambda (x y) (cond (     (eq x '0)  (list '0 y))
-                                    (     (eq y '0)  (list '0 x))
-                                    ((not (eq x y)) '(0 0))
-                                    (     (eq x '-) '(- +))
-                                    (            t  '(+ -)) )))
+;                 + + -   + 0 -  : negate
+; + + +   + + 0   + 0 0          : negate 
 
-; Add balanced-ternary digits, respecting a positive carry digit.
+;                 0 0 -          : place digits in order - 0 +
+;                 0 - 0          : place digits in order - 0 +
+;         0 - -   + - -   0 - +  : place digits in order - 0 +
+;         - 0 -   - + -   - + 0  : place digits in order - 0 +
 
-(label trit_add+ (lambda (x y) (cond (     (eq x '-)  (list '0 y))
-                                     (     (eq y '-)  (list '0 x))
-                                     ((not (eq x y)) '(+ -))
-                                     (     (eq x '0) '(0 +))
-                                     (            t  '(+ 0)) )))
+;                 - - +   - 0 +  : cancel a minus with a plus
+; - - -   - - 0   - 0 0   0 0 0  : canonical
+
+;   - 0     - +     0 -     0 0  : sums
+
 
 ; params:   x: left addend, a trit
 ;           y: right addend, a trit
 ;           c: carry digit, a trit
 ; return: car: new carry digit, a trit
 ;        cadr: result digit, a trit
-(label trit_add_carrying (lambda (x y c) (cond
-    ((eq c '0) (trit_add  x y))
-    ((eq c '+) (trit_add+ x y))
-    (       t  (trit_add- x y))
-)))
+(label trit_add (lambda (x y c) (cond
+    ((eq x '-) (cond ((eq y '-) (cond ((eq c '-) '(- 0)) ((eq c '0) '(- +)) (t '(0 -))))
+                     ((eq y '0) (cond ((eq c '-) '(- +)) ((eq c '0) '(0 -)) (t '(0 0))))
+                     (       t  (cond ((eq c '-) '(0 -)) ((eq c '0) '(0 0)) (t '(0 +)))) ))
+    ((eq x '0) (cond ((eq y '-) (cond ((eq c '-) '(- +)) ((eq c '0) '(0 -)) (t '(0 0))))
+                     ((eq y '0) (cond ((eq c '-) '(0 -)) ((eq c '0) '(0 0)) (t '(0 +))))
+                     (       t  (cond ((eq c '-) '(0 0)) ((eq c '0) '(0 +)) (t '(+ -)))) ))
+    (       t  (cond ((eq y '-) (cond ((eq c '-) '(0 -)) ((eq c '0) '(0 0)) (t '(0 +))))
+                     ((eq y '0) (cond ((eq c '-) '(0 0)) ((eq c '0) '(0 +)) (t '(+ -))))
+                     (       t  (cond ((eq c '-) '(0 +)) ((eq c '0) '(+ -)) (t '(+ 0)))) )) )))
+
+; (label bit_add (lambda (x y c) (assoc-equal (cons x (list y c))
+;     '(((0 0 0) (0 0))  ((0 0 1) (0 1))  ((0 1 0) (0 1))  ((0 1 1) (1 0))
+;       ((1 0 0) (0 1))  ((1 0 1) (1 0))  ((1 1 0) (1 0))  ((1 1 1) (1 1))) )))
+
+(label bit_add (lambda (x y c) (cond ((eq x  y) (list y c))
+                                     ((eq c '0)     '(0 1))
+                                     (       t      '(1 0)) )))
 
 ; params:   x: left addend, a trit
 ;           y: right addend, a trit
 ;          cs: sum of less significant digits, a bal3 with leading carry digit
 ; return:      new sum, a bal3 with leading carry digit
 (label bal3_trits_add (lambda (x y cs)
-    (append (trit_add_carrying x y (car cs)) (cdr cs)) ))
+    (append (trit_add x y (car cs)) (cdr cs)) ))
+
+(label bin_bits_add (lambda (x y cs)
+    (append (bit_add x y (car cs)) (cdr cs)) ))
 
 ; This little state machine can be factored and optimized.
 ;
@@ -289,6 +265,32 @@
     ; x has more-significant digits that we need to stack up before adding
     (t (bal3_add_carrying yr (cons (car x) xr) (cdr x) y cs)) )))
 
+(label bin_add_carrying (lambda (yr xr x y cs) (cond
+    ((null (cdr x)) (cond  ; scanned to last digit of x: ready to add?
+        ((null (cdr y)) (cond  ; scanned to last digit of y: ready to add.
+            ((null yr) (cond  ; y's stack is empty
+                ((null xr)  ; and x's stack is empty
+                    ; add the respective final digits and that's all!
+                    (bin_bits_add (car x) (car y) cs) )
+                (t  ; only x's stack has digits: push a zero to y's
+                    (bin_add_carrying '(0) xr x y cs) ) ))
+            (t (cond  ; y's stack still has digits
+                ((null xr)  ; only y's stack has digits: push a zero to x's
+                    (bin_add_carrying yr '(0) x y cs) )
+                (t  ; both x's and y's stacks have digits
+                    (bin_add_carrying (cdr yr)
+                                       (cdr xr)
+                                       (cons (car xr) ())
+                                       (cons (car yr) ())
+                                           (bin_bits_add (car x)
+                                                           (car y)
+                                                            cs) )) )) ))
+
+        ; y has more-significant digits that we need to stack up before adding
+        (t (bin_add_carrying (cons (car y) yr) xr x (cdr y) cs)) ))
+    ; x has more-significant digits that we need to stack up before adding
+    (t (bin_add_carrying yr (cons (car x) xr) (cdr x) y cs)) )))
+
 ; Nonce function
 (label discard_car_while_eq (lambda (x y) (cond
     ((null (cdr y))  y)  ; in my case I want at least one element
@@ -299,8 +301,14 @@
 (label bal3_add_denorm (lambda (x y)
     (bal3_add_carrying () () x y '(0)) ))
 
+(label bin_add_denorm (lambda (x y)
+    (bin_add_carrying () () x y '(0)) ))
+
 (label bal3_add (lambda (x y)
     (discard_car_while_eq '0 (bal3_add_denorm x y)) ))
+
+(label bin_add (lambda (x y)
+    (discard_car_while_eq '0 (bin_add_denorm x y)) ))
 
 ; Balanced-ternary multiplication.
 
@@ -312,16 +320,23 @@
                                      ((eq x  y) '+)
                                      (       t  '-) )))
 
+(label bit_mult (lambda (x y) (cond ((and (eq x '1) (eq y '1)) '1)
+                                    (                       t  '0) )))
+
 ; params: x: left multiplicand, a bal3
 ;         y: right multiplicand, a trit
 (label bal3_mult_trit (lambda (x y) (cond ((eq y '0) '(0))
                                           ((eq y '+)   x)
                                           (       t   (bal3_neg x)) )))
 
+(label bin_mult_bit (lambda (x y) (cond ((eq y '0) '(0))
+                                        (       t    x ) )))
+
 ; Balanced-ternary multiplication
 
 (label bal3_mult (lambda (m n) ( bal3_mult_tritwise () m n '((0) ()) )))
 
+(label bin_mult (lambda (m n) ( bin_mult_bitwise () m n '((0) ()) )))
 
 ; This little state machine can be factored and optimized.
 ;
@@ -343,6 +358,19 @@
                                        (cdr n)
                                         cp)) )))
 
+(label bin_mult_bitwise (lambda (nr m n cp) (cond
+    ((null (cdr n)) (cond
+        ((null nr) (append (bin_add (car cp) (bin_mult_bit m (car n)))
+                           (cadr cp)))  ; add carry digits to product; record all
+        (       t  (bin_mult_bitwise (cdr nr)  ; load next digit of n
+                                      m
+                                     (cons (car nr) ())
+                                     (bin_mult_bit_acc m (car n) cp) )) ))
+    (           t  (bin_mult_bitwise (cons (car n) nr)  ; stack up digits of n
+                                      m
+                                     (cdr n)
+                                      cp)) )))
+
 ; params:  m: left multiplicand, a bal3
 ;          n: one digit of right multiplicand, a trit
 ;         cp: car: digits carried from sum of previous digit products, a bal3
@@ -355,6 +383,10 @@
     (cdr pc1)  ; carry "c1" to add with next bal3*trit product
     (cons (car pc1) (cadr cp0)) )))  ; prefix "p" to output digits "p0"
 
+(label bin_mult_bit_regroup (lambda (pc1 cp0) (list
+    (cdr pc1)  ; carry "c1" to add with next bin*bit product
+    (cons (car pc1) (cadr cp0)) )))  ; prefix "p" to output digits "p0"
+
 ; params:  m: left multiplicand, a bal3
 ;          n: one digit of right multiplicand, a trit
 ;         cp: car: digits carried from sum of previous digit products, a bal3
@@ -364,4 +396,8 @@
 ;            cadr: digits completed from sum of digit products
 (label bal3_mult_trit_acc (lambda (m n cp0) (bal3_mult_trit_regroup
     (rotate-right (bal3_add_denorm (bal3_mult_trit m n) (car cp0)))
+    cp0)))
+
+(label bin_mult_bit_acc (lambda (m n cp0) (bin_mult_bit_regroup
+    (rotate-right (bin_add_denorm (bin_mult_bit m n) (car cp0)))
     cp0)))
