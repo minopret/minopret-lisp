@@ -51,17 +51,16 @@
 # TODO make this an option set by command-line option to mnplisp.py
 trace = False
 
-# sugar
-Symbol = str
+from mnpexpr import Expr, Symbol
 
 # If I understand correctly, this is the Funarg device.
 # The Funarg device implements lexical scope and closures.
 class Env(dict):
-    def __init__(self, params = (), args = (), outer = None):
+    def __init__(self, params = Expr(), args = Expr(), outer = None):
         self.update(zip(params, args))
         self.outer = outer
     def find(self, x):
-        if x == ():
+        if x == Expr():
             return None
         elif x in self:
             return self
@@ -72,9 +71,9 @@ class Env(dict):
 
 # defined with "def" rather than lambda
 # for sake of better Python traces
-def atom_(x): return Symbol('t') if isinstance(x, Symbol) or x == () else ()
+def atom_(x): return Symbol('t') if isinstance(x, Symbol) or x == Expr() else Expr()
 def car_(x): return x[0]
-def cdr_(x): return x[1:]
+def cdr_(x): return Expr(x[1:])
 
 # Not in use. Do not want??
 def cond_(*pairs):
@@ -82,10 +81,10 @@ def cond_(*pairs):
         if pairs[0][0] is Symbol('t'):
             return pairs[0][1]
         pairs = pairs[1:]
-    return ()
+    return Expr()
 
-def cons_(x, y): return tuple([x] + list(y))
-def eq_(x, y): return Symbol('t') if x is y else ()
+def cons_(x, y): return Expr([x] + list(y))
+def eq_(x, y): return Symbol('t') if x == y else Expr()
 
 # Not in use. Do not want??
 def quote_(x): return x
@@ -96,7 +95,7 @@ def evcon_(env, *pairs):
         if eval_(pairs[0][0], env) is Symbol('t'):
             return pairs[0][1]
         pairs = pairs[1:]
-    return ()
+    return Expr()
 
 def lambda_(params, body, env):
     return lambda *args: eval_(body, Env(params, args, env))
@@ -113,7 +112,7 @@ def mk_builtins(env):
     })
     return env
 
-def boolean(x): return True if x is not () else False
+def boolean(x): return True if x != Expr() else False
 
 env0 = mk_builtins(Env())
 
@@ -125,7 +124,7 @@ def eval_(x, env=env0):
     if trace:
         print 'Evaluate ' + str(x) + '.'  # + ' in environment ' + str(env) + '.'
 
-    if isinstance(x, Symbol) or x == ():  # (atom x)
+    if isinstance(x, Symbol) or x == Expr():  # (atom x)
         e = env.find(x)
         return (e[x] if e != None else x)
 
@@ -133,14 +132,20 @@ def eval_(x, env=env0):
         exp = x[1]
         return exp
 
+    elif x[0] == 'trace':
+        exp = x[1]
+        val = eval_(exp, env)
+        print 'Trace ' + str(exp) + ': ' + str(val) + '.'
+        return val
+
     elif x[0] == 'cond':
         pairs = x[1:]
         if len(pairs) == 0:        # In other implementations is it an error?
-            return ()
+            return Expr()
         else:
             (test, action) = pairs[0]
             if not boolean(eval_(test, env)):
-                action = tuple([x[0]]+list(x[2:]))
+                action = Expr([x[0]]+list(x[2:]))
             return eval_(action, env)
 
     elif x[0] == 'label':
@@ -159,20 +164,20 @@ def eval_(x, env=env0):
     # which in Python might be:
     # elif x[0][0] == 'label':
     #     label_expr = x[0]
-    #     args = list(x[1:])  # convert from tuple
+    #     args = list(x[1:])  # convert from Expr
     #     label_name = x[0][1]
     #     label_value = x[0][2]
     #     env1 = Env((label_name), (label_expr), env)
-    #     return eval_(tuple([(label_value)] + args), env1)
+    #     return eval_(Expr([(label_value)] + args), env1)
     #
     # but could instead destructively update the existing environment:
     # elif x[0][0] == 'label':
     #     label_name = x[0][1]
     #     label_value = x[0][2]
     #     label_expr = x[0]
-    #     args = list(x[1:])  # convert from tuple
+    #     args = list(x[1:])  # convert from Expr
     #     env[label_name] = label_expr
-    #     return eval_(tuple([(label_value)] + args), env)
+    #     return eval_(Expr([(label_value)] + args), env)
 
     elif x[0] == 'lambda':
         params = x[1]
@@ -196,7 +201,7 @@ def eval_(x, env=env0):
     else:
         y = [eval_(xi, env) for xi in x]
         y0 = y.pop(0)
-        y = tuple(y)
+        y = Expr(y)
         if trace:
             print 'Apply ' + str(y0) + ' to ' + str(y) + '.'
         return y0(*y)
