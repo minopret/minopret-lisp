@@ -8,32 +8,44 @@
 
 from sys import stdin
 
-def rep():
+def read_eval_print(prompt = None):
     from mnpeval import eval_
-    # from mnpread import read_exprs  # for interactive prompt
-    from mnpread import string_to_tuple  # for input from file
+    from mnpread import read_exprs  # for interactive prompt
+    from mnpread import string_to_expr  # for input from file
     import traceback
 
     try:
-        # x = read_exprs(prompt = prompt)  # for interactive prompt
-        x = string_to_tuple(stdin.read())  # for input from file
+        
+        if prompt == None:
+            x = string_to_expr(stdin.read())  # input from file
+        else:
+            x = read_exprs(prompt = prompt)  # interactive prompt
+
         for xi in x:
+
+            # Macros go here. I'm not enthusiastic about macros.
+            # However, they seem the most convenient way by far to implement (load).
+            if isinstance(xi, list) and len(xi) > 1 and xi[0] == 'load':
+                basename = xi[1]
+                # Perhaps check whether the file has been loaded previously.
+                # Handle input from the referenced file here.
+
             yi = eval_(xi)
             if yi != None:
                 print yi
-    except EOFError:
+    except EOFError:  # Totally doesn't work
         print EOFError
     except StopIteration:
         print StopIteration
     except Exception:
         traceback.print_exc()
 
-def repl(prompt='mnplisp> '):
-    
+def read_eval_print_loop(prompt='mnplisp> '):
     while True:
-        rep()
+        read_eval_print(prompt)
 
-#repl()
+# TODO Make this choice using command-line option "--script".
 
-rep()
+#read_eval_print_loop()  # for interactive session
+read_eval_print()  # for input from file
 
