@@ -48,10 +48,17 @@
 # - On the other hand I mostly find it more readable just to
 #   code to the "obvious" Python representation throughout.
 
-# TODO make this an option set by command-line option to mnplisp.py
-trace = False
 
 from mnpexpr import Expr, Symbol
+
+
+trace = False
+
+
+def set_trace(is_trace = False):
+    global trace
+    trace = is_trace
+
 
 # If I understand correctly, this is the Funarg device.
 # The Funarg device implements lexical scope and closures.

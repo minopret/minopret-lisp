@@ -2,20 +2,33 @@
 #
 # Aaron Mansheim, September 2011
 
-# TODO Provide a --script option that gets input from stdin with no prompt.
-# TODO Provide a trace option that passes through to mnpread.
-# TODO Exit when finished evaluating and stdin has closed. (How?)
+from sys import stdin, exit
+from argparse import ArgumentParser
+from mnpeval import set_trace
 
-from sys import stdin
-import argparse
+arg_parser = ArgumentParser(description='A simple classic Lisp.')
+arg_parser.add_argument(
+    '--script',
+    dest = 'input',
+    action = 'store_const',
+    const = 'batch',
+    default = 'interactive',
+    help = 'process a batch of input with no prompt ' \
+        + '(default: prompt for interactive input)',
+)
 
-parser = argparse.ArgumentParser(description='A simple classic Lisp.')
-parser.add_argument('--script', dest='input', action='store_const',
-   const='batch', default='interactive',
-   help='process a batch of input with no prompt ' \
-   + '(default: prompt for interactive input)'
+arg_parser.add_argument(
+    '--trace',
+    dest = 'trace',
+    action = 'store_const',
+    const = 'tron',
+    default = 'troff',
+    help = 'list every function as it is evaluated or applied',
+)
 
-args = parser.parse_args()
+args = arg_parser.parse_args()
+if args.trace == 'tron':
+    set_trace(True)
 
 def read_eval_print(prompt = None):
     from mnpeval import eval_
@@ -42,8 +55,8 @@ def read_eval_print(prompt = None):
             yi = eval_(xi)
             if yi != None:
                 print yi
-    except EOFError:  # Totally doesn't work
-        print EOFError
+    except EOFError:
+        exit(0)
     except StopIteration:
         print StopIteration
     except Exception:
