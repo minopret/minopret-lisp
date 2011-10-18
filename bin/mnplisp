@@ -2,4 +2,3 @@
 MNPBASE=`dirname $0`
 cd $MNPBASE/../lib
 python mnplisp.py $*
-cd -
