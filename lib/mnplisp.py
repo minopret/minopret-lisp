@@ -7,6 +7,15 @@
 # TODO Exit when finished evaluating and stdin has closed. (How?)
 
 from sys import stdin
+import argparse
+
+parser = argparse.ArgumentParser(description='A simple classic Lisp.')
+parser.add_argument('--script', dest='input', action='store_const',
+   const='batch', default='interactive',
+   help='process a batch of input with no prompt ' \
+   + '(default: prompt for interactive input)'
+
+args = parser.parse_args()
 
 def read_eval_print(prompt = None):
     from mnpeval import eval_
@@ -44,8 +53,8 @@ def read_eval_print_loop(prompt='mnplisp> '):
     while True:
         read_eval_print(prompt)
 
-# TODO Make this choice using command-line option "--script".
-
-#read_eval_print_loop()  # for interactive session
-read_eval_print()  # for input from file
+if args.input == 'interactive':
+    read_eval_print_loop()
+else:
+    read_eval_print()
 
