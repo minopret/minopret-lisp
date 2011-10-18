@@ -1,11 +1,20 @@
 minopret lisp
 
-Usage: echo "'(Hello World)" | python mnplisp.py 
 
-A Lisp in the manner of John McCarthy (1960).
-Created: "minopret" (Aaron Mansheim), 2011-09-06 to 2011-10-02
+    usage: mnplisp.py [-h] [--script] [--trace]
 
-I hope that mnpeval.py makes clear to anyone who reads it
+    A simple classic Lisp.
+
+    optional arguments:
+      -h, --help  show this help message and exit
+      --script    process a batch of input with no prompt (default: prompt for
+                  interactive input)
+      --trace     list every function as it is evaluated or applied
+
+
+Created: "minopret" (Aaron Mansheim), 2011-09-06 to 2011-10-18
+
+I hope that lib/mnpeval.py makes clear to anyone who reads it
 how an elementary Lisp runtime works. That file is in
 essence a stripped down version of Peter Norvig's "lis.py".
 
@@ -20,10 +29,15 @@ refrain from looping. The critical piece in mnpeval.py is "eval".
 That is enough to occupy a person's attention. Reading is in
 mnpread.py. A read-eval-print driver is in mnplisp.py.
 
+The shell scripts in "test" provide examples using
+some additional basic integer and string processing that I
+have written in Lisp in the files in "lib".
+
 I have no illusions that this will break any speed records.
-That's totally beside the point. Some time,
-I may be able to apply my formal logic skills (even Coq) to
-provide certifiably correct optimizations.
+That's totally beside the point. Little by little,
+I may be able to apply my formal logic skills, particularly
+the Coq proof assistant, to provide certifiably correct
+optimizations. See directory "logic" for some of that.
  
 The functionality of this "eval" closely follows Paul
 Graham's representation in "The Roots of Lisp" of John
