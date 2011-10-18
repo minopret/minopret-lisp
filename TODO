@@ -1,17 +1,20 @@
 I have lots of ideas for this. Here are some.
 
 Baseline functionality
-- (load) preferably compatible with the REPL
-- Implement printing s-expressions instead of Python data.
+- (load) function preferably compatible with the REPL
+DONE Implement printing s-expressions instead of Python data.
 - Integer division (rationals) using quote notation
-- Integer-coded character data.
-- Compare magnitude of integers.
+DONE Integer-coded character data.
+PARTIAL Compare magnitude of integers:
+    DONE for balanced-ternary integers
+    - TODO for binary integers
 
 Application programming
-- Implement computation of fibonacci numbers. This is easily in reach.
-  Do some timing. Compare with a few mature languages that have
+DONE Implement computation of fibonacci numbers. This is easily in reach.
+- Do some timing of fibonacci. Compare with a few mature languages that have
   various degrees of support for this kind of thing.
-- Implement computation of factorials. How fast is that? How big an input
+DONE Implement computation of factorials.
+- How fast are factorials? How big an input
   can this language, its library, and its interpreter support?
   What's the limiting factor? Do you hit Python's recursion stack limit?
   Do you run out of patience?
@@ -19,9 +22,10 @@ Application programming
 Advances
 - Explicit call stack in the interpreter.
 - Enable tail calls to reuse existing stack frames.
-- Rewrite the interpreter in something other than Python:
-  Java, CLISP, JavaScript, CINT <http://root.cern.ch/drupal/content/cint>,
-  bash, Perl.
+PARTIAL Rewrite the interpreter in something other than Python:
+    PARTIAL JavaScript
+    - TODO Java, CLISP, CINT <http://root.cern.ch/drupal/content/cint>,
+      bash, Perl.
 - Implement a metacircular evaluator like Paul Graham's jmc.lisp
   in "The Roots of Lisp".
 - Automatically translate programs (including the evaluator) into
@@ -58,5 +62,6 @@ Advances
 - Implement an incremental compiler for statements. This technique is
   used to speed up the REPL.
 - Compile to gcc's GENERIC middle-end language. Then get the benefit
-  of its libffi foreign function interface. Suddenly, interfacing to
-  POSIX and lots of other things becomes tractable.
+  of its libffi foreign function interface. With that, interfacing to
+  POSIX and lots of other things will become tractable.
+- Add bindings for wxWidgets.
