@@ -1,5 +1,4 @@
-# mnpeval.py
-# A language much like Lisp I
+# mnpeval.py # A language much like Lisp I
 #   <http://www-formal.stanford.edu/jmc/recursive.html>
 # as interpreted by Paul Graham,
 #   <http://www.paulgraham.com/rootsoflisp.html>
@@ -55,7 +54,7 @@ from mnpexpr import Expr, Symbol
 trace = False
 
 
-def set_trace(is_trace = False):
+def set_trace(is_trace=False):
     global trace
     trace = is_trace
 
@@ -63,9 +62,10 @@ def set_trace(is_trace = False):
 # If I understand correctly, this is the Funarg device.
 # The Funarg device implements lexical scope and closures.
 class Env(dict):
-    def __init__(self, params = Expr(), args = Expr(), outer = None):
+    def __init__(self, params=Expr(), args=Expr(), outer=None):
         self.update(zip(params, args))
         self.outer = outer
+
     def find(self, x):
         if x == Expr():
             return None
@@ -76,11 +76,20 @@ class Env(dict):
         else:
             return None
 
+
 # defined with "def" rather than lambda
 # for sake of better Python traces
-def atom_(x): return Symbol('t') if isinstance(x, Symbol) or x == Expr() else Expr()
-def car_(x): return x[0]
-def cdr_(x): return Expr(x[1:])
+def atom_(x):
+    return Symbol('t') if isinstance(x, Symbol) or x == Expr() else Expr()
+
+
+def car_(x):
+    return x[0]
+
+
+def cdr_(x):
+    return Expr(x[1:])
+
 
 # Not in use. Do not want??
 def cond_(*pairs):
@@ -90,11 +99,19 @@ def cond_(*pairs):
         pairs = pairs[1:]
     return Expr()
 
-def cons_(x, y): return Expr([x] + list(y))
-def eq_(x, y): return Symbol('t') if x == y else Expr()
+
+def cons_(x, y):
+    return Expr([x] + list(y))
+
+
+def eq_(x, y):
+    return Symbol('t') if x == y else Expr()
+
 
 # Not in use. Do not want??
-def quote_(x): return x
+def quote_(x):
+    return x
+
 
 # Not in use. Do not want??
 def evcon_(env, *pairs):
@@ -104,8 +121,10 @@ def evcon_(env, *pairs):
         pairs = pairs[1:]
     return Expr()
 
+
 def lambda_(params, body, env):
     return lambda *args: eval_(body, Env(params, args, env))
+
 
 def mk_builtins(env):
     env.update({
@@ -119,17 +138,18 @@ def mk_builtins(env):
     })
     return env
 
-def boolean(x): return True if x != Expr() else False
+
+def boolean(x):
+    return True if x != Expr() else False
 
 env0 = mk_builtins(Env())
-
 
 
 def eval_(x, env=env0):
     from sys import exit
 
     if trace:
-        print 'Evaluate ' + str(x) + '.'  # + ' in environment ' + str(env) + '.'
+        print 'Evaluate ' + str(x) + '.'
 
     if isinstance(x, Symbol) or x == Expr():  # (atom x)
         e = env.find(x)
@@ -152,11 +172,11 @@ def eval_(x, env=env0):
         else:
             (test, action) = pairs[0]
             if not boolean(eval_(test, env)):
-                action = Expr([x[0]]+list(x[2:]))
+                action = Expr([x[0]] + list(x[2:]))
             return eval_(action, env)
 
     elif x[0] == 'label':
-        name  = x[1]
+        name = x[1]
         value = x[2]
         env[name] = eval_(value, env)
 
@@ -166,10 +186,8 @@ def eval_(x, env=env0):
     #            (cons (list. (cadar e) (car e)) a)))
     #
     # Example of use (??)
-    # (  (label f ( (lambda (x) (cond ((null x) ()) (t (cdr x)))) ))  '(a b)  )
-    #
-    # which in Python might be:
-    # elif x[0][0] == 'label':
+    # ( (label f ( (lambda (x) (cond ((null x) ()) (t (cdr x)))) ))  '(a b) )
+    # # which in Python might be: # elif x[0][0] == 'label':
     #     label_expr = x[0]
     #     args = list(x[1:])  # convert from Expr
     #     label_name = x[0][1]
@@ -188,7 +206,7 @@ def eval_(x, env=env0):
 
     elif x[0] == 'lambda':
         params = x[1]
-        body   = x[2]
+        body = x[2]
         return lambda_(params, body, env)
 
     # Actually Paul Graham writes 'lambda' in Common Lisp as:
@@ -212,4 +230,3 @@ def eval_(x, env=env0):
         if trace:
             print 'Apply ' + str(y0) + ' to ' + str(y) + '.'
         return y0(*y)
-
