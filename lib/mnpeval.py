@@ -91,35 +91,12 @@ def cdr_(x):
     return Expr(x[1:])
 
 
-# Not in use. Do not want??
-def cond_(*pairs):
-    while len(pairs) > 0:
-        if pairs[0][0] is Symbol('t'):
-            return pairs[0][1]
-        pairs = pairs[1:]
-    return Expr()
-
-
 def cons_(x, y):
     return Expr([x] + list(y))
 
 
 def eq_(x, y):
     return Symbol('t') if x == y else Expr()
-
-
-# Not in use. Do not want??
-def quote_(x):
-    return x
-
-
-# Not in use. Do not want??
-def evcon_(env, *pairs):
-    while len(pairs) > 0:
-        if eval_(pairs[0][0], env) is Symbol('t'):
-            return pairs[0][1]
-        pairs = pairs[1:]
-    return Expr()
 
 
 def lambda_(params, body, env):
@@ -131,16 +108,17 @@ def mk_builtins(env):
         'atom': atom_,
         'car': car_,
         'cdr': cdr_,
-        # cond      # special case in eval_
+        # cond      # special form implemented in eval_
         'cons': cons_,
         'eq': eq_,
-        # quote     # special case in eval_
+        # quote     # special form implemented in eval_
     })
     return env
 
 
 def boolean(x):
     return True if x != Expr() else False
+
 
 env0 = mk_builtins(Env())
 
@@ -161,7 +139,7 @@ def eval_(x, env=env0):
 
     elif x[0] == 'trace':
         exp = x[1]
-        val = eval_(exp, env)
+        val = eval_(exp, env)  # near-miss tail call
         print 'Trace ' + str(exp) + ': ' + str(val) + '.'
         return val
 
@@ -171,14 +149,14 @@ def eval_(x, env=env0):
             return Expr()
         else:
             (test, action) = pairs[0]
-            if not boolean(eval_(test, env)):
+            if not boolean(eval_(test, env)):  # NOT NEARLY a tail call
                 action = Expr([x[0]] + list(x[2:]))
-            return eval_(action, env)
+            return eval_(action, env)  # tail call
 
     elif x[0] == 'label':
         name = x[1]
         value = x[2]
-        env[name] = eval_(value, env)
+        env[name] = eval_(value, env)  # tail call
 
     # Actually Paul Graham writes 'label' in Common Lisp as:
     #((eq (caar e) 'label)
@@ -224,8 +202,8 @@ def eval_(x, env=env0):
         exit()
 
     else:
-        y = [eval_(xi, env) for xi in x]
-        y0 = y.pop(0)
+        y = [eval_(xi, env) for xi in x]  # NOT tail calls
+        y0 = y.pop(0)  # EXCEPT y0 is a near-miss tail call
         y = Expr(y)
         if trace:
             print 'Apply ' + str(y0) + ' to ' + str(y) + '.'
