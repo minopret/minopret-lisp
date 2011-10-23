@@ -3,15 +3,10 @@
 ; hex->bit^4  hex^3->base64^2  hex^2->quoted-printable  hex->bit^4 (full circle)
 ;
 ; Functions on variable-size input:
-;                              quoted-printable->hex
+;      bits->hex  base64->hex  quoted-printable->hex
+; hex->bits  hex->base64  hex->quoted-printable  hex->bits
 ;
 ; Current limits: 31 ASCII chars, 62 hex digits
-;
-;
-; Additional planned functions on variable-size input:
-;      bits->hex  base64->hex  quoted-printable->hex
-; hex->bits  hex->base64  hex->quoted-printable  hex->bits (full circle)
-;
 ; Planned limits: Very relaxed, if I implement proper tail recursion.
 ;
 ; Aaron Mansheim, 2011-10-15
@@ -25,18 +20,53 @@
       (8 ( t () () ()))  (9 ( t () ()  t))  (A ( t ()  t ()))  (B ( t ()  t  t))
       (C ( t  t () ()))  (D ( t  t ()  t))  (E ( t  t  t ()))  (F ( t  t  t  t)) ) )))
 
+(label hex->bits (lambda (u) (cond
+    ((null u) ())
+    (      t  (append (hex->bit^4 (car u)) (hex->bits (cdr u)))) )))
+
+; params: d, a hex digit
+; return: list of two base-4 (quaternary) digits
 (label hex->quater^2 (lambda (d) (assoc d
     '((0 (0 0))  (1 (0 1))  (2 (0 2))  (3 (0 3))
       (4 (1 0))  (5 (1 1))  (6 (1 2))  (7 (1 3))
       (8 (2 0))  (9 (2 1))  (A (2 2))  (B (2 3))
       (C (3 0))  (D (3 1))  (E (3 2))  (F (3 3)) ) )))
 
+; params: x and y, two base-4 (quaternary) digits
+; return: a hex digit
+(label quater^2->hex (lambda (x y) (assoc-equal (list x y)
+    '(((0 0) 0)  ((0 1) 1)  ((0 2) 2)  ((0 3) 3)
+      ((1 0) 4)  ((1 1) 5)  ((1 2) 6)  ((1 3) 7)
+      ((2 0) 8)  ((2 1) 9)  ((2 2) A)  ((2 3) B)
+      ((3 0) C)  ((3 1) D)  ((3 2) E)  ((3 3) F) ) )))
+
+; Clever variant
+;(label quater^2->hex (lambda (x y) (
+;    (assoc x '((0 bit^2->quater) (1 bit^2+4->hex)
+;               (2 bit^2+8->hex ) (3 bit^2+C->hex) ))
+;    (quater->bit^2 y) )))
+
 ; Convert four binary digits, most significant bit first,
 ; to one hexadecimal digit.
 (label bit^4->hex (lambda (x) (
-    (cond ((car x) (cond ((cadr x) 'bit^2+C->hex) (t 'bit^2+8->hex)))
-          (     t  (cond ((cadr x) 'bit^2+4->hex) (t 'bit^2->quater))) )
+    (cond ((car x) (cond ((cadr x) bit^2+C->hex) (t bit^2+8->hex)))
+          (     t  (cond ((cadr x) bit^2+4->hex) (t bit^2->quater))) )
     (cddr x) )))
+
+(label bits->hex (lambda (u) (cond
+    ((null u) ())
+
+    ; These three cases shouldn't happen
+    ((null (cdr u)) (bit^4->hex (append (list () ()) (list () (car u)))))
+    ((null (cddr u)) (bit^4->hex (append (list () ())
+                                         (list (car u) (cadr u)) )))
+    ((null (cdddr u)) (bit^4->hex (append (list () (car u))
+                                          (list (cadr u) (caddr u)) )))
+
+    (             t   (append (bit^4->hex (append (list (car u) (cadr u))
+                                                  (list (caddr u)
+                                                        (cadddr u) ) ))
+                              (bits->hex (cddddr u)) )) )))
 
 (label bit^2+C->hex (
     lambda (x) (cond ((car x) (cond ((cadr x) 'F) (t 'E))) ((cadr x) 'D) (t 'C)) ))
@@ -50,44 +80,78 @@
 (label bit^2->quater (
     lambda (x) (cond ((car x) (cond ((cadr x) '3) (t '2))) ((cadr x) '1) (t '0)) ))
 
-(label quater->bit^2 (lambda (x) (assoc '((0 (() ())) (1 (()  t)) (2 ( t ())) (3 ( t  t))))))
-
-; Currently unused
-;(label quater^2->hex (lambda (x y) (
-;    (assoc x '((0 bit^2->quater) (1 bit^2+4->hex) (2 bit^2+8->hex) (3 bit^2+C->hex)))
-;    (quater->bit^2 y) )))
+(label quater->bit^2 (lambda (x) (assoc x '((0 (() ())) (1 (()  t)) (2 ( t ())) (3 ( t  t))))))
 
 ; Base64 encoding RFC 1421
+; params: x, y, and z, three hex digits
+; return: list of two base64 digits
 (label hex^3->base64^2 (lambda (x y z) (
-    quater^3->base64^2 (hex->quater^2 x) (hex->quater^2 y) (hex->quater^2 z) )))
+    quater^2*3->base64^2 (hex->quater^2 x) (hex->quater^2 y) (hex->quater^2 z) )))
 
-(label quater^3->base64^2 (lambda (x y z) (list
-    (quater^3->base64 (cons (car x) (list (cadr x) (car y))))
-    (quater^3->base64 (cons (cadr y) z)) )))
+; params: u, a list of hex digits
+; return: list of base64 digits
+(label hex->base64 (lambda (u) (cond
+    ((null u) ())
+    ((null (cdr u)) (hex^3->base64^2 '0 '0 (car u)))  ; shouldn't happen
+    ((null (cddr u)) (hex^3->base64^2 '0 (car u) (cadr u)))  ; shouldn't happen
+    (             t  (append (hex^3->base64^2 (car u) (cadr u) (caddr u))
+                             (hex->base64 (cdddr u)) )) )))
 
+; params: x, y, and z, three pairs of base-4 (quaternary) digits
+; return: list of two base64 digits
+(label quater^2*3->base64^2 (lambda (x y z) (list
+    (quater^3->base64 (car  x) (cadr x) (car  y))
+    (quater^3->base64 (cadr y) (car  z) (cadr z)) )))
+
+; params: x and y, two base64 digits
+; return: list of three hex digits
 (label base64^2->hex^3 (
-    lambda (x y) (append (base64->quater^3 x) (base64->quater^3 y)) ))
+    lambda (x y) (quater^6*1->hex^3 (append (base64->quater^3 x)
+                                            (base64->quater^3 y) )) ))
 
-(label base64->quater^3 (lambda (x y) (assoc '(
-(A (0 0 0)) (B (0 0 1)) (C (0 0 2)) (D (0 0 3)) (E (0 1 0)) (F (0 1 1)) (G (0 1 2)) (H (0 1 3))
-(I (0 2 0)) (J (0 2 1)) (K (0 2 2)) (L (0 2 3)) (M (0 3 0)) (N (0 3 1)) (O (0 3 2)) (P (0 3 3))
-(Q (1 0 0)) (R (1 0 1)) (S (1 0 2)) (T (1 0 3)) (U (1 1 0)) (V (1 1 1)) (W (1 1 2)) (X (1 1 3))
-(Y (1 2 0)) (Z (1 2 1)) (a (1 2 2)) (b (1 2 3)) (c (1 3 0)) (d (1 3 1)) (e (1 3 2)) (f (1 3 3))
-(g (2 0 0)) (h (2 0 1)) (i (2 0 2)) (j (2 0 3)) (k (2 1 0)) (l (2 1 1)) (m (2 1 2)) (n (2 1 3))
-(o (2 2 0)) (p (2 2 1)) (q (2 2 2)) (r (2 2 3)) (s (2 3 0)) (t (2 3 1)) (u (2 3 2)) (v (2 3 3))
-(w (3 0 0)) (x (3 0 1)) (y (3 0 2)) (z (3 0 3)) (0 (3 1 0)) (1 (3 1 1)) (2 (3 1 2)) (3 (3 1 3))
-(4 (3 2 0)) (5 (3 2 1)) (6 (3 2 2)) (7 (3 2 3)) (8 (3 3 0)) (9 (3 3 1)) (+ (3 3 2)) (/ (3 3 3))
+; params: u, a list of six base-4 (quaternary) digits
+; return: list of three hex digits
+(label quater^6*1->hex^3 (lambda (u) (cons
+    (quater^2->hex (car u) (cadr u))
+    (list (quater^2->hex (caddr u) (cadddr u))
+          (quater^2->hex (car (cddddr u)) (cadr (cddddr u))) ) )))
+
+(label base64->hex (lambda (u) (cond
+    ((null u) ())
+    ((null (cdr u)) (base64^2->hex^3 'A (car u)))  ; shouldn't happen
+    (            t  (append (base64^2->hex^3 (car u) (cadr u))
+                            (base64->hex (cddr u)) )) )))
+
+(label base64->quater^3 (lambda (x) (assoc x '(
+(A (0 0 0)) (B (0 0 1)) (C (0 0 2)) (D (0 0 3))
+(E (0 1 0)) (F (0 1 1)) (G (0 1 2)) (H (0 1 3))
+(I (0 2 0)) (J (0 2 1)) (K (0 2 2)) (L (0 2 3))
+(M (0 3 0)) (N (0 3 1)) (O (0 3 2)) (P (0 3 3))
+(Q (1 0 0)) (R (1 0 1)) (S (1 0 2)) (T (1 0 3))
+(U (1 1 0)) (V (1 1 1)) (W (1 1 2)) (X (1 1 3))
+(Y (1 2 0)) (Z (1 2 1)) (a (1 2 2)) (b (1 2 3))
+(c (1 3 0)) (d (1 3 1)) (e (1 3 2)) (f (1 3 3))
+(g (2 0 0)) (h (2 0 1)) (i (2 0 2)) (j (2 0 3))
+(k (2 1 0)) (l (2 1 1)) (m (2 1 2)) (n (2 1 3))
+(o (2 2 0)) (p (2 2 1)) (q (2 2 2)) (r (2 2 3))
+(s (2 3 0)) (t (2 3 1)) (u (2 3 2)) (v (2 3 3))
+(w (3 0 0)) (x (3 0 1)) (y (3 0 2)) (z (3 0 3))
+(0 (3 1 0)) (1 (3 1 1)) (2 (3 1 2)) (3 (3 1 3))
+(4 (3 2 0)) (5 (3 2 1)) (6 (3 2 2)) (7 (3 2 3))
+(8 (3 3 0)) (9 (3 3 1)) (+ (3 3 2)) (/ (3 3 3))
 ))))
 
+; params: x, y, and z, three base-4 (quaternary) digits
+; return: a base64 digit
 (label quater^3->base64 (lambda (x y z) (assoc z (assoc y (assoc x '(
-    (0 '((0 '((0 A) (1 B) (2 C) (3 D))) (1 '((0 E) (1 F) (2 G) (3 H)))
-         (2 '((0 I) (1 J) (2 K) (3 L))) (3 '((0 M) (1 N) (2 O) (3 P))) ))
-    (1 '((0 '((0 Q) (1 R) (2 S) (3 T))) (1 '((0 U) (1 V) (2 W) (3 X)))
-         (2 '((0 Y) (1 Z) (2 a) (3 b))) (3 '((0 c) (1 d) (2 e) (3 f))) ))
-    (2 '((0 '((0 g) (1 h) (2 i) (3 j))) (1 '((0 k) (1 l) (2 m) (3 n)))
-         (2 '((0 o) (1 p) (2 q) (3 r))) (3 '((0 s) (1 t) (2 u) (3 v))) ))
-    (3 '((0 '((0 w) (1 x) (2 y) (3 z))) (1 '((0 0) (1 1) (2 2) (3 3)))
-         (2 '((0 4) (1 5) (2 6) (3 7))) (3 '((0 8) (1 9) (2 +) (3 /))) )) ))))))
+    (0 ((0 ((0 A) (1 B) (2 C) (3 D))) (1 ((0 E) (1 F) (2 G) (3 H)))
+        (2 ((0 I) (1 J) (2 K) (3 L))) (3 ((0 M) (1 N) (2 O) (3 P))) ))
+    (1 ((0 ((0 Q) (1 R) (2 S) (3 T))) (1 ((0 U) (1 V) (2 W) (3 X)))
+        (2 ((0 Y) (1 Z) (2 a) (3 b))) (3 ((0 c) (1 d) (2 e) (3 f))) ))
+    (2 ((0 ((0 g) (1 h) (2 i) (3 j))) (1 ((0 k) (1 l) (2 m) (3 n)))
+        (2 ((0 o) (1 p) (2 q) (3 r))) (3 ((0 s) (1 t) (2 u) (3 v))) ))
+    (3 ((0 ((0 w) (1 x) (2 y) (3 z))) (1 ((0 0) (1 1) (2 2) (3 3)))
+        (2 ((0 4) (1 5) (2 6) (3 7))) (3 ((0 8) (1 9) (2 +) (3 /))) )) ))))))
 
 (label hex^2->quoted-printable (lambda (x y) (assoc y (cond
     ((eq x '2) '((0 (= 2 0))
@@ -108,6 +172,12 @@
     ((eq x '7) '((0 (p)) (1 (q)) (2 (r)) (3 (s)) (4 (t)) (5 (u)) (6 (v)) (7 (w))
                  (8 (x)) (9 (y)) (A (z)) (B ({)) (C (|)) (D (})) (E (~)) (F (= 7 F)) ))
     (       t  (cons '= (list x y))) ))))
+
+(label hex->quoted-printable (lambda (u) (cond
+    ((null u) ())
+    ((null (cdr u)) (hex^2->quoted-printable '0 (car u)))  ; shouldn't happen
+    (            t  (append (hex^2->quoted-printable (car u) (cadr u))
+                            (hex->quoted-printable (cddr u)) )) )))
 
 ; Just put nils in y and z if there aren't enough tokens left.
 (label quoted-printable->hex^2*pushback (lambda (x y z) (cond
