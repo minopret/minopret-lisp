@@ -69,3 +69,8 @@
 (assert-equal (bin-pred '(   t  t ())) '( t ()  t))
 (assert-equal (bin-pred '(   t  t  t)) '( t  t ()))
 (assert-equal (bin-pred '(t () () ())) '( t  t  t))
+
+(assert-equal (dec-add '(0) '(1)) '(1))
+(assert-equal (dec-add '(3) '(1)) '(4))
+(assert-equal (dec-add '(1 5) '(2 3)) '(3 8))
+(assert-equal (dec-add '(1 5) '(2 8)) '(4 3))
