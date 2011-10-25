@@ -16,6 +16,7 @@
 ; trit^4->bal81 bal81->trit^4
 ; bal3-neg bal3-minus bal3-add bal3-mult bal3-lt bal3-gt
 ; bin-pred             bin-add  bin-mult
+; dec-pred             dec-add
 ;
 ; Aaron Mansheim, 2011-09-24
 
@@ -122,6 +123,7 @@
 (label trit-neg (lambda (x) (assoc x '( (+ -) (0 0) (- +) ) )))
 
 
+; near-miss tail call
 (label bal3-neg (lambda (x) (cond
     ((null x)  ())
     ( t        (cons (trit-neg (car x)) (bal3-neg (cdr x)))) )))
@@ -135,6 +137,7 @@
 
 ; The predecessor function for unsigned arbitrary-precision binary numbers.
 ; Here we pay a price for storing the most-significant bit first.
+; tail call: discard-car-while-eq
 (label bin-pred (lambda (x) (cond
     ((eq x '(())) '(()))  ; +0; - +1; := +0; because we can't go lower
     ( t            (discard-car-while-eq '() (cadr (bin-pred-rec x)))) )))
@@ -143,6 +146,8 @@
 ; Params: x, a binary number, as non-empty list of Lisp truth values,
 ;            most-significant bit first
 ; Return: pair of borrow bit and lower result
+; tail call: bin-pred-borrow
+; near-miss self-tail call
 (label bin-pred-rec (lambda (x) (cond
     ((eq x '(())) '( t ( t)))  ; +0 - +1 == -1:+1
     ((eq x '( t)) '(() (())))  ; +1 - +1 == -0:+0
@@ -308,10 +313,12 @@
     (append (trit-add x y (car cs)) (cdr cs)) ))
 
 
+; tail call: append
 (label bin-bits-add (lambda (x y cs)
     (append (bit-add x y (car cs)) (cdr cs)) ))
 
 
+; near-miss self-tail call
 (label dec-digits-add (lambda (x y cs)
     (append (dec-digit-add x y (car cs)) (cdr cs)) ))
 
@@ -379,6 +386,33 @@
     ( t (bin-add-carrying yr (cons (car x) xr) (cdr x) y cs)) )))
 
 
+(label dec-add-carrying (lambda (yr xr x y cs) (cond
+    ((null (cdr x)) (cond       ; scanned to last digit of x: ready to add?
+        ((null (cdr y)) (cond   ; scanned to last digit of y: ready to add.
+            ((null yr) (cond    ; y's stack is empty
+                ((null xr)      ; and x's stack is empty
+                    ; add the respective final digits and that's all!
+                    (dec-digits-add (car x) (car y) cs) )
+                ( t             ; only x's stack has digits: push a zero to y's
+                    (dec-add-carrying '(()) xr x y cs) ) ))
+            ( t (cond           ; y's stack still has digits
+                ((null xr)      ; only y's stack has digits: push a zero to x's
+                    (dec-add-carrying yr '(()) x y cs) )
+                ( t             ; both x's and y's stacks have digits
+                    (dec-add-carrying (cdr yr)
+                                      (cdr xr)
+                                      (cons (car xr) ())
+                                      (cons (car yr) ())
+                                      (dec-digits-add (car x)
+                                                    (car y)
+                                                     cs    ) ) ) )) ))
+
+        ; y has more-significant digits that we need to stack up before adding
+        ( t (dec-add-carrying (cons (car y) yr) xr x (cdr y) cs)) ))
+    ; x has more-significant digits that we need to stack up before adding
+    ( t (dec-add-carrying yr (cons (car x) xr) (cdr x) y cs)) )))
+
+
 ; Nonce function
 (label discard-car-while-eq (lambda (x y) (cond
     ((null (cdr y))  y)  ; in my uses I want at least one element
@@ -395,12 +429,19 @@
     (bin-add-carrying () () x y '(())) ))
 
 
+(label dec-add-denorm (lambda (x y) (dec-add-carrying () () x y '(0)) ))
+
+
 (label bal3-add (lambda (x y)
     (discard-car-while-eq '0 (bal3-add-denorm x y)) ))
 
 
 (label bin-add (lambda (x y)
     (discard-car-while-eq () (bin-add-denorm x y)) ))
+
+
+(label dec-add (lambda (x y)
+    (discard-car-while-eq '0 (dec-add-denorm x y)) ))
 
 
 ; Balanced-ternary multiplication.
@@ -416,6 +457,28 @@
 
 (label bit-mult (lambda (x y) (cond ((and (eq x t) (eq y t))  t)
                                     ( t                      ()) )))
+
+(label dec-digit-mult (lambda (x y) (assoc y (assoc x '(
+    (0 ((0 (0 0)) (1 (0 0)) (2 (0 0)) (3 (0 0)) (4 (0 0))
+        (5 (0 0)) (6 (0 0)) (7 (0 0)) (8 (0 0)) (9 (0 0)) ))
+    (1 ((0 (0 0)) (1 (0 1)) (2 (0 2)) (3 (0 3)) (4 (0 4))
+        (5 (0 5)) (6 (0 6)) (7 (0 7)) (8 (0 8)) (9 (0 9)) ))
+    (2 ((0 (0 0)) (1 (0 2)) (2 (0 4)) (3 (0 6)) (4 (0 8))
+        (5 (1 0)) (6 (1 2)) (7 (1 4)) (8 (1 6)) (9 (1 8)) ))
+    (3 ((0 (0 0)) (1 (0 3)) (2 (0 6)) (3 (0 9)) (4 (1 2))
+        (5 (1 5)) (6 (1 8)) (7 (2 1)) (8 (2 4)) (9 (2 7)) ))
+    (4 ((0 (0 0)) (1 (0 4)) (2 (0 8)) (3 (1 2)) (4 (1 6))
+        (5 (2 0)) (6 (2 4)) (7 (2 8)) (8 (3 2)) (9 (3 6)) ))
+    (5 ((0 (0 0)) (1 (0 5)) (2 (1 0)) (3 (1 5)) (4 (2 0))
+        (5 (2 5)) (6 (3 0)) (7 (3 5)) (8 (4 0)) (9 (4 5)) ))
+    (6 ((0 (0 0)) (1 (0 6)) (2 (1 2)) (3 (1 8)) (4 (2 4))
+        (5 (3 0)) (6 (3 6)) (7 (4 2)) (8 (4 8)) (9 (5 4)) ))
+    (7 ((0 (0 0)) (1 (0 7)) (2 (1 4)) (3 (2 1)) (4 (2 8))
+        (5 (3 5)) (6 (4 2)) (7 (4 9)) (8 (5 6)) (9 (6 3)) ))
+    (8 ((0 (0 0)) (1 (0 8)) (2 (1 6)) (3 (2 4)) (4 (3 2))
+        (5 (4 0)) (6 (4 8)) (7 (5 6)) (8 (6 4)) (9 (7 2)) ))
+    (9 ((0 (0 0)) (1 (0 9)) (2 (1 8)) (3 (2 7)) (4 (3 6))
+        (5 (4 5)) (6 (5 4)) (7 (6 3)) (8 (7 2)) (9 (8 1)) )) )))))
 
 
 ; params: x: left multiplicand, a bal3
