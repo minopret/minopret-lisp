@@ -125,8 +125,11 @@ class Procedure(object):
         self.params = params
         self.body = body
         self.env = env
+        self.name = ''
     def __call__(self, *args):
         return eval_(self.body, Env(self.params, args, self.env))
+    def __str__(self):
+        return self.name
 
 
 env0 = mk_builtins(Env())
@@ -134,6 +137,7 @@ env0 = mk_builtins(Env())
 
 def eval_(x, env=env0):
     from sys import exit
+    from types import FunctionType
 
     while True:  # Be ready to reprocess any proper tail calls.
         if trace:
@@ -166,8 +170,11 @@ def eval_(x, env=env0):
         elif x[0] == 'label':
             name = x[1]
             value = x[2]
-            env[name] = eval_(value, env)  # near-miss tail call
-            return None
+            evalue = eval_(value, env)  # near-miss tail call
+            env[name] = evalue
+            if isinstance(evalue, Procedure):
+                evalue.name = name
+            return evalue
 
         # Actually Paul Graham writes 'label' in Common Lisp as:
         #((eq (caar e) 'label)
@@ -217,7 +224,11 @@ def eval_(x, env=env0):
             y0 = y.pop(0)
             y = Expr(y)
             if trace:
-                print 'Apply ' + str(y0) + ' to ' + str(y) + '.'
+                if isinstance(y0, FunctionType):
+                    n = y0.__name__
+                else:
+                    n = str(y0)
+                print 'Apply ' + n + ' to ' + str(y) + '.'
             if isinstance(y0, Procedure):
                 x = y0.body
                 env = Env(y0.params, y, y0.env)  # proper tail call

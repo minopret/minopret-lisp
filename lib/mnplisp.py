@@ -16,7 +16,8 @@ def read_exprs(prompt=None):
 
 def read_eval_print(prompt=None):
     from sys import exit
-    from mnpeval import eval_
+    from types import FunctionType
+    from mnpeval import eval_, Procedure
     import traceback
 
     try:
@@ -33,7 +34,8 @@ def read_eval_print(prompt=None):
             #    # Handle input from the referenced file here.
 
             yi = eval_(xi)
-            if yi != None:
+            if yi != None and str(yi) != '' and not isinstance(yi, Procedure) \
+                    and not isinstance(yi, FunctionType):
                 print yi
     except EOFError:
         exit(0)
