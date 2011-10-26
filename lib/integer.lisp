@@ -467,15 +467,15 @@
     (    t            
         (discard-car-while-eq '() (cadr (
             (label bin-pred-rec (lambda (x) (cond
-                (   (eq x '(())) '( t ( t)))      ; +0 - +1 == -1:+1
-                (   (eq x '( t)) '(() (())))      ; +1 - +1 == -0:+0
+                (   (eq x '(())) '( t ( t)))      ; borrow: +0 - +1 == -1:+1
+                (   (eq x '( t)) '(() (())))      ; cancel: +1 - +1 == -0:+0
                 (    t (
                     (lambda (x y) (cond
                         ((eq (car y) ()) (list () (cons  x (cadr y))))
                         ((eq      x   t) (list () (cons () (cadr y))))
                         ( t              (list  t (cons  t (cadr y)))) ))
                     (car x)
-                    (bin-pred-rec (cdr x)) ) ) )))
+                    (bin-pred-rec (cdr x)) ) ) )))  ; FIXME not tail recursive
              x ))) ) )))
 
 
@@ -484,46 +484,47 @@
 ;     '(((0 0 0) (0 0))  ((0 0 1) (0 1))  ((0 1 0) (0 1))  ((0 1 1) (1 0))
 ;       ((1 0 0) (0 1))  ((1 0 1) (1 0))  ((1 1 0) (1 0))  ((1 1 1) (1 1))) )))
 
-; We can write binary digit addition with only one "cond".
-(label bit-add (lambda (x y c) (cond ((eq x  y) (list  y  c))
-                                     ((eq c ())     '(()  t))
-                                     ( t            '( t ())) )))
 
-
-; tail call: append
+; params: x and y, two more significant bits
+;         car cs, a carry bit from less significant addition
+;         cadr cs, the sum of less significant addition
+; return: a binary number that has the bits of the sum of x, y, and car cs
+;         followed by the bits of cadr cs.
 (label bin-bits-add (lambda (x y cs)
-    (append (bit-add x y (car cs)) (cdr cs)) ))
+    (append (
+       ; This function adds two bits and a carry bit with only one "cond".
+       (lambda (x y c) (cond ((eq x  y) (list  y  c))
+                             ((eq c ())     '(()  t))
+                             ( t            '( t ())) ))
+            x y (car cs) )
+       (cdr cs) ) ))
 
 
-(label bin-add-carrying (lambda (yr xr x y cs) (cond
-    ((null (cdr x)) (cond       ; scanned to last digit of x: ready to add?
-        ((null (cdr y)) (cond   ; scanned to last digit of y: ready to add.
-            ((null yr) (cond    ; y's stack is empty
-                ((null xr)      ; and x's stack is empty
-                    ; add the respective final digits and that's all!
-                    (bin-bits-add (car x) (car y) cs) )
-                ( t             ; only x's stack has digits: push a zero to y's
-                    (bin-add-carrying '(()) xr x y cs) ) ))
-            ( t (cond           ; y's stack still has digits
-                ((null xr)      ; only y's stack has digits: push a zero to x's
-                    (bin-add-carrying yr '(()) x y cs) )
-                ( t             ; both x's and y's stacks have digits
-                    (bin-add-carrying (cdr yr)
-                                      (cdr xr)
-                                      (cons (car xr) ())
-                                      (cons (car yr) ())
-                                      (bin-bits-add (car x)
-                                                    (car y)
-                                                     cs    ) ) ) )) ))
-
-        ; y has more-significant digits that we need to stack up before adding
-        ( t (bin-add-carrying (cons (car y) yr) xr x (cdr y) cs)) ))
-    ; x has more-significant digits that we need to stack up before adding
-    ( t (bin-add-carrying yr (cons (car x) xr) (cdr x) y cs)) )))
+; params: xr and yr, two reversed binary numbers
+;         car cs, a carry bit from less significant addition
+;         cadr cs, the sum of less significant addition
+; return: a binary number that has the bits of the sum of x, y, and car cs
+;         followed by the bits of cadr cs.
+(label bin-add-carrying (lambda (yr xr cs) (cond
+    ((null (cdr yr)) (cond    ; y has no more significant bits
+        ((null (cdr xr))      ; and x has no more significant bits
+            ; add the respective final bits and that's all!
+            (bin-bits-add (car xr) (car yr) cs) )
+        ( t             ; only x has more bits: extend y with a zero
+            (bin-add-carrying (list (car yr) '()) xr cs) ) ))
+    ( t (cond           ; y has more significant bits
+        ((null (cdr xr))      ; only y has more bits: extend x with a zero
+            (bin-add-carrying yr (list (car xr) '()) cs) )
+        ( t             ; both x and y have more bits
+            (bin-add-carrying (cdr yr)
+                              (cdr xr)
+                              (bin-bits-add (car xr)
+                                            (car yr)
+                                             cs    ) ) ) )) )))
 
 
 (label bin-add-denorm (lambda (x y)
-    (bin-add-carrying () () x y '(())) ))
+    (bin-add-carrying (reverse y) (reverse x) '(())) ))
 
 
 (label bin-add (lambda (x y)
