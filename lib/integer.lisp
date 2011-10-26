@@ -21,6 +21,13 @@
 ; Aaron Mansheim, 2011-09-24
 
 
+; Nonce function
+(label discard-car-while-eq (lambda (x y) (cond
+    ((null (cdr y))  y)  ; in my uses I want at least one element
+    ((eq x (car y)) (discard-car-while-eq x (cdr y)))
+    ( t              y) )))
+
+
 ; Where I want more compactness I could use this balanced base-81 encoding
 ; into printable characters of ASCII (equivalently, UTF-8 Basic Latin block):
 ;
@@ -132,37 +139,6 @@
 (label bal3-minus (lambda (x y) (bal3-add x (bal3-neg y))))
 
 
-; Unsigned binary subtraction will be zero when the minuend is greater.
-; No implementation yet.
-
-; The predecessor function for unsigned arbitrary-precision binary numbers.
-; Here we pay a price for storing the most-significant bit first.
-; tail call: discard-car-while-eq
-(label bin-pred (lambda (x) (cond
-    ((eq x '(())) '(()))  ; +0; - +1; := +0; because we can't go lower
-    ( t            (discard-car-while-eq '() (cadr (bin-pred-rec x)))) )))
-
-
-; Params: x, a binary number, as non-empty list of Lisp truth values,
-;            most-significant bit first
-; Return: pair of borrow bit and lower result
-; tail call: bin-pred-borrow
-; near-miss self-tail call
-(label bin-pred-rec (lambda (x) (cond
-    ((eq x '(())) '( t ( t)))  ; +0 - +1 == -1:+1
-    ((eq x '( t)) '(() (())))  ; +1 - +1 == -0:+0
-    ( t            (bin-pred-borrow (car x) (bin-pred-rec (cdr x)))) )))
-
-
-; Params: x, a Lisp truth value representing a more-significant bit
-;         y, a pair of borrow bit and lower result
-; Return: pair of borrow bit and lower result
-(label bin-pred-borrow (lambda (x y) (cond
-    ((eq (car y) ()) (list () (cons  x (cadr y))))     ; ( x + -0):y = -0: x:y
-    ((eq      x   t) (list () (cons () (cadr y))))     ; (+1 + -1):y = -0:+0:y
-    ( t              (list  t (cons  t (cadr y)))) ))) ; (+0 + -1):y = -1:+1:y
-
-
 (label dec-digit-pred (lambda (x) (assoc x
     '((1 0) (2 1) (3 2) (4 3) (5 4) (6 5) (7 6) (8 7) (9 8) (0 9)) )))
 
@@ -251,17 +227,6 @@
           (+ ((- (0 +)) (0 (+ -)) (+ (+ 0)))) )) ) )))))
 
 
-; Now binary digits. First let's write addition as an operation table.
-; (label bit-add (lambda (x y c) (assoc-equal (cons x (list y c))
-;     '(((0 0 0) (0 0))  ((0 0 1) (0 1))  ((0 1 0) (0 1))  ((0 1 1) (1 0))
-;       ((1 0 0) (0 1))  ((1 0 1) (1 0))  ((1 1 0) (1 0))  ((1 1 1) (1 1))) )))
-
-; We can write binary digit addition with only one "cond".
-(label bit-add (lambda (x y c) (cond ((eq x  y) (list  y  c))
-                                     ((eq c ())     '(()  t))
-                                     ( t            '( t ())) )))
-
-
 ; We can easily write a lookup table to add two decimal digits.
 (label dec-digit-add-pair (lambda (x y) (assoc y (assoc x
     '((0 ((0 (0 0)) (1 (0 1)) (2 (0 2)) (3 (0 3)) (4 (0 4))
@@ -313,11 +278,6 @@
     (append (trit-add x y (car cs)) (cdr cs)) ))
 
 
-; tail call: append
-(label bin-bits-add (lambda (x y cs)
-    (append (bit-add x y (car cs)) (cdr cs)) ))
-
-
 ; near-miss self-tail call
 (label dec-digits-add (lambda (x y cs)
     (append (dec-digit-add x y (car cs)) (cdr cs)) ))
@@ -359,33 +319,6 @@
     ( t (bal3-add-carrying yr (cons (car x) xr) (cdr x) y cs)) )))
 
 
-(label bin-add-carrying (lambda (yr xr x y cs) (cond
-    ((null (cdr x)) (cond       ; scanned to last digit of x: ready to add?
-        ((null (cdr y)) (cond   ; scanned to last digit of y: ready to add.
-            ((null yr) (cond    ; y's stack is empty
-                ((null xr)      ; and x's stack is empty
-                    ; add the respective final digits and that's all!
-                    (bin-bits-add (car x) (car y) cs) )
-                ( t             ; only x's stack has digits: push a zero to y's
-                    (bin-add-carrying '(()) xr x y cs) ) ))
-            ( t (cond           ; y's stack still has digits
-                ((null xr)      ; only y's stack has digits: push a zero to x's
-                    (bin-add-carrying yr '(()) x y cs) )
-                ( t             ; both x's and y's stacks have digits
-                    (bin-add-carrying (cdr yr)
-                                      (cdr xr)
-                                      (cons (car xr) ())
-                                      (cons (car yr) ())
-                                      (bin-bits-add (car x)
-                                                    (car y)
-                                                     cs    ) ) ) )) ))
-
-        ; y has more-significant digits that we need to stack up before adding
-        ( t (bin-add-carrying (cons (car y) yr) xr x (cdr y) cs)) ))
-    ; x has more-significant digits that we need to stack up before adding
-    ( t (bin-add-carrying yr (cons (car x) xr) (cdr x) y cs)) )))
-
-
 (label dec-add-carrying (lambda (yr xr x y cs) (cond
     ((null (cdr x)) (cond       ; scanned to last digit of x: ready to add?
         ((null (cdr y)) (cond   ; scanned to last digit of y: ready to add.
@@ -413,20 +346,9 @@
     ( t (dec-add-carrying yr (cons (car x) xr) (cdr x) y cs)) )))
 
 
-; Nonce function
-(label discard-car-while-eq (lambda (x y) (cond
-    ((null (cdr y))  y)  ; in my uses I want at least one element
-    ((eq x (car y)) (discard-car-while-eq x (cdr y)))
-    ( t              y) )))
-
-
 ; Add without removing leading zeroes from sum
 (label bal3-add-denorm (lambda (x y)
     (bal3-add-carrying () () x y '(0)) ))
-
-
-(label bin-add-denorm (lambda (x y)
-    (bin-add-carrying () () x y '(())) ))
 
 
 (label dec-add-denorm (lambda (x y) (dec-add-carrying () () x y '(0)) ))
@@ -434,10 +356,6 @@
 
 (label bal3-add (lambda (x y)
     (discard-car-while-eq '0 (bal3-add-denorm x y)) ))
-
-
-(label bin-add (lambda (x y)
-    (discard-car-while-eq () (bin-add-denorm x y)) ))
 
 
 (label dec-add (lambda (x y)
@@ -454,9 +372,6 @@
                                      ((eq x  y) '+)
                                      ( t        '-) )))
 
-
-(label bit-mult (lambda (x y) (cond ((and (eq x t) (eq y t))  t)
-                                    ( t                      ()) )))
 
 (label dec-digit-mult (lambda (x y) (assoc y (assoc x '(
     (0 ((0 (0 0)) (1 (0 0)) (2 (0 0)) (3 (0 0)) (4 (0 0))
@@ -488,16 +403,9 @@
                                           ( t         (bal3-neg x)) )))
 
 
-(label bin-mult-bit (lambda (x y) (cond ((eq y ()) '(()))
-                                        ( t           x ) )))
-
-
 ; Balanced-ternary multiplication
 
 (label bal3-mult (lambda (m n) ( bal3-mult-tritwise () m n '((0) ()) )))
-
-
-(label bin-mult (lambda (m n) ( bin-mult-bitwise () m n '((()) ()) )))
 
 
 ; The following state machine could be factored and optimized.
@@ -522,21 +430,6 @@
                                         cp)) )))
 
 
-(label bin-mult-bitwise (lambda (nr m n cp) (cond
-    ((null (cdr n)) (cond
-        ((null nr) (append 
-            (bin-add (car cp) (bin-mult-bit m (car n)))
-            (cadr cp) ))  ; add carry digits to product; record all
-        ( t        (bin-mult-bitwise (cdr nr)  ; load next digit of n
-                                      m
-                                     (cons (car nr) ())
-                                     (bin-mult-bit-acc m (car n) cp) )) ))
-    ( t            (bin-mult-bitwise (cons (car n) nr)  ; stack digits of n
-                                      m
-                                     (cdr n)
-                                      cp)) )))
-
-
 ; params:  m: left multiplicand, a bal3
 ;          n: one digit of right multiplicand, a trit
 ;         cp: car: digits carried from sum of previous digit products, a bal3
@@ -547,11 +440,6 @@
 
 (label bal3-mult-trit-regroup (lambda (pc1 cp0) (list
     (cdr pc1)  ; carry "c1" to add with next bal3*trit product
-    (cons (car pc1) (cadr cp0)) )))  ; prefix "p" to output digits "p0"
-
-
-(label bin-mult-bit-regroup (lambda (pc1 cp0) (list
-    (cdr pc1)  ; carry "c1" to add with next bin*bit product
     (cons (car pc1) (cadr cp0)) )))  ; prefix "p" to output digits "p0"
 
 
@@ -567,6 +455,99 @@
      cp0)))
 
 
-(label bin-mult-bit-acc (lambda (m n cp0) (bin-mult-bit-regroup
-    (rotate-right (bin-add-denorm (bin-mult-bit m n) (car cp0)))
-     cp0)))
+; Unsigned binary subtraction will be zero when the minuend is greater.
+; No implementation yet.
+
+; The predecessor function for unsigned arbitrary-precision binary numbers.
+; Here we pay a price for storing the most-significant bit first.
+; tail call: discard-car-while-eq
+(label bin-pred (lambda (x) (cond
+    (   (eq x '(()))
+       '(()))  ; +0; - +1; := +0; because we can't go lower
+    (    t            
+        (discard-car-while-eq '() (cadr (
+            (label bin-pred-rec (lambda (x) (cond
+                (   (eq x '(())) '( t ( t)))      ; +0 - +1 == -1:+1
+                (   (eq x '( t)) '(() (())))      ; +1 - +1 == -0:+0
+                (    t (
+                    (lambda (x y) (cond
+                        ((eq (car y) ()) (list () (cons  x (cadr y))))
+                        ((eq      x   t) (list () (cons () (cadr y))))
+                        ( t              (list  t (cons  t (cadr y)))) ))
+                    (car x)
+                    (bin-pred-rec (cdr x)) ) ) )))
+             x ))) ) )))
+
+
+; Now binary digits. First let's write addition as an operation table.
+; (label bit-add (lambda (x y c) (assoc-equal (cons x (list y c))
+;     '(((0 0 0) (0 0))  ((0 0 1) (0 1))  ((0 1 0) (0 1))  ((0 1 1) (1 0))
+;       ((1 0 0) (0 1))  ((1 0 1) (1 0))  ((1 1 0) (1 0))  ((1 1 1) (1 1))) )))
+
+; We can write binary digit addition with only one "cond".
+(label bit-add (lambda (x y c) (cond ((eq x  y) (list  y  c))
+                                     ((eq c ())     '(()  t))
+                                     ( t            '( t ())) )))
+
+
+; tail call: append
+(label bin-bits-add (lambda (x y cs)
+    (append (bit-add x y (car cs)) (cdr cs)) ))
+
+
+(label bin-add-carrying (lambda (yr xr x y cs) (cond
+    ((null (cdr x)) (cond       ; scanned to last digit of x: ready to add?
+        ((null (cdr y)) (cond   ; scanned to last digit of y: ready to add.
+            ((null yr) (cond    ; y's stack is empty
+                ((null xr)      ; and x's stack is empty
+                    ; add the respective final digits and that's all!
+                    (bin-bits-add (car x) (car y) cs) )
+                ( t             ; only x's stack has digits: push a zero to y's
+                    (bin-add-carrying '(()) xr x y cs) ) ))
+            ( t (cond           ; y's stack still has digits
+                ((null xr)      ; only y's stack has digits: push a zero to x's
+                    (bin-add-carrying yr '(()) x y cs) )
+                ( t             ; both x's and y's stacks have digits
+                    (bin-add-carrying (cdr yr)
+                                      (cdr xr)
+                                      (cons (car xr) ())
+                                      (cons (car yr) ())
+                                      (bin-bits-add (car x)
+                                                    (car y)
+                                                     cs    ) ) ) )) ))
+
+        ; y has more-significant digits that we need to stack up before adding
+        ( t (bin-add-carrying (cons (car y) yr) xr x (cdr y) cs)) ))
+    ; x has more-significant digits that we need to stack up before adding
+    ( t (bin-add-carrying yr (cons (car x) xr) (cdr x) y cs)) )))
+
+
+(label bin-add-denorm (lambda (x y)
+    (bin-add-carrying () () x y '(())) ))
+
+
+(label bin-add (lambda (x y)
+    (discard-car-while-eq () (bin-add-denorm x y)) ))
+
+
+(label bit-mult (lambda (x y) (cond ((and (eq x t) (eq y t))  t)
+                                    ( t                      ()) )))
+
+
+(label bin-mult-bit (lambda (x y) (cond ((eq y ()) '(()))
+                                        ( t           x ) )))
+
+
+(label bin-mult (lambda (m n) (
+    (label bin-mult-bitwise (lambda (nr m cp0) (cond
+        (   (null   (cdr nr))
+            (append (bin-add (car cp0) (bin-mult-bit m (car nr))) (cadr cp0)) )
+        (    t
+            (bin-mult-bitwise (cdr nr) m (
+                (lambda (pc1) (list (cdr pc1)
+                                    (cons (car pc1) (cadr cp0)) ))
+                (rotate-right (bin-add-denorm (bin-mult-bit m (car nr))
+                                              (car cp0) )) )) ) )))
+    (reverse n) m '((()) ()) )))
+
+
