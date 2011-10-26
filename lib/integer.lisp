@@ -486,41 +486,47 @@
 
 
 ; params: x and y, two more significant bits
-;         car cs, a carry bit from less significant addition
-;         cadr cs, the sum of less significant addition
-; return: a binary number that has the bits of the sum of x, y, and car cs
-;         followed by the bits of cadr cs.
+;         car cs, a carry bit from less significant addition;
+;                 or a zero bit, if no less significant addition occurred.
+;         cdr cs, a binary number, the sum of less significant addition,
+;                 possibly including one or more leading zero bits;
+;                 or an empty list, if no less significant addition occurred.
+; return: a binary number that has the bits of the sum of x, y, and car cs;
+;         followed by the bits of cdr cs.
 (label bin-bits-add (lambda (x y cs)
-    (append (
-       ; This function adds two bits and a carry bit with only one "cond".
-       (lambda (x y c) (cond ((eq x  y) (list  y  c))
-                             ((eq c ())     '(()  t))
-                             ( t            '( t ())) ))
-            x y (car cs) )
-       (cdr cs) ) ))
+    (append
+        (
+            ; This function adds two bits and a carry bit with only one "cond".
+            (lambda (x y c) (cond
+                ((eq x  y) (list  y  c))
+                ((eq c ())     '(()  t))
+                ( t            '( t ())) ))
+             x y (car cs) )
+        (cdr cs) ) ))
 
 
 ; params: xr and yr, two reversed binary numbers
 ;         car cs, a carry bit from less significant addition
-;         cadr cs, the sum of less significant addition
-; return: a binary number that has the bits of the sum of x, y, and car cs
+;         cdr cs, a binary number, the sum of less significant addition
+; return: a binary number that has the bits of the sum of
+;         the reverse of xr, the reverse of yr, and car cs;
 ;         followed by the bits of cadr cs.
 (label bin-add-carrying (lambda (yr xr cs) (cond
-    ((null (cdr yr)) (cond    ; y has no more significant bits
-        ((null (cdr xr))      ; and x has no more significant bits
-            ; add the respective final bits and that's all!
-            (bin-bits-add (car xr) (car yr) cs) )
-        ( t             ; only x has more bits: extend y with a zero
-            (bin-add-carrying (list (car yr) '()) xr cs) ) ))
-    ( t (cond           ; y has more significant bits
-        ((null (cdr xr))      ; only y has more bits: extend x with a zero
-            (bin-add-carrying yr (list (car xr) '()) cs) )
-        ( t             ; both x and y have more bits
-            (bin-add-carrying (cdr yr)
-                              (cdr xr)
-                              (bin-bits-add (car xr)
-                                            (car yr)
-                                             cs    ) ) ) )) )))
+    ((null  yr) (cond   ; y has no more bits
+        ((null xr) cs)  ; ...and x has no more bits. Done.
+        ( t             ; Only x has more bits: extend y with a zero.
+            (bin-add-carrying '(()) xr cs) ) ))
+    ( t (cond           ; y has more bits
+        ((null xr)      ; ...and x has no more bits. Extend x with a zero.
+            (bin-add-carrying yr '(()) cs) )
+        ( t             ; Both x and y have more bits.
+            (bin-add-carrying
+                (cdr yr)
+                (cdr xr)
+                (bin-bits-add
+                    (car xr)
+                    (car yr)
+                     cs ) ) ) )) )))
 
 
 (label bin-add-denorm (lambda (x y)
@@ -550,5 +556,3 @@
                 (rotate-right (bin-add-denorm (bin-mult-bit m (car nr))
                                               (car cp0) )) )) ) )))
     (reverse n) m '((()) ()) )))
-
-
