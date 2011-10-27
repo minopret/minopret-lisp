@@ -479,64 +479,59 @@
              x ))) ) )))
 
 
-; Now binary digits. First let's write addition as an operation table.
+; Now binary digits. First let's write bitwise addition as an operation table.
+; We'll need three operands to handle a carry bit from the previous column.
 ; (label bit-add (lambda (x y c) (assoc-equal (cons x (list y c))
 ;     '(((0 0 0) (0 0))  ((0 0 1) (0 1))  ((0 1 0) (0 1))  ((0 1 1) (1 0))
 ;       ((1 0 0) (0 1))  ((1 0 1) (1 0))  ((1 1 0) (1 0))  ((1 1 1) (1 1))) )))
 
 
-; params: x and y, two more significant bits
-;         car cs, a carry bit from less significant addition;
-;                 or a zero bit, if no less significant addition occurred.
-;         cdr cs, a binary number, the sum of less significant addition,
-;                 possibly including one or more leading zero bits;
-;                 or an empty list, if no less significant addition occurred.
-; return: a binary number that has the bits of the sum of x, y, and car cs;
-;         followed by the bits of cdr cs.
-(label bin-bits-add (lambda (x y cs)
-    (append
-        (
-            ; This function adds two bits and a carry bit with only one "cond".
-            (lambda (x y c) (cond
-                ((eq x  y) (list  y  c))
-                ((eq c ())     '(()  t))
-                ( t            '( t ())) ))
-             x y (car cs) )
-        (cdr cs) ) ))
-
-
-; params: xr and yr, two reversed binary numbers
-;         car cs, a carry bit from less significant addition
-;         cdr cs, a binary number, the sum of less significant addition
-; return: a binary number that has the bits of the sum of
-;         the reverse of xr, the reverse of yr, and car cs;
-;         followed by the bits of cadr cs.
-(label bin-add-carrying (lambda (yr xr cs) (cond
-    ((null  yr) (cond   ; y has no more bits
-        ((null xr) cs)  ; ...and x has no more bits. Done.
-        ( t             ; Only x has more bits: extend y with a zero.
-            (bin-add-carrying '(()) xr cs) ) ))
-    ( t (cond           ; y has more bits
-        ((null xr)      ; ...and x has no more bits. Extend x with a zero.
-            (bin-add-carrying yr '(()) cs) )
-        ( t             ; Both x and y have more bits.
-            (bin-add-carrying
-                (cdr yr)
-                (cdr xr)
-                (bin-bits-add
-                    (car xr)
-                    (car yr)
-                     cs ) ) ) )) )))
-
+; I owe a diagram for this function because I have inlined several
+; small clearly delineated functions that I had developed separately.
+;           ___________________
+;          |                 _ \
+;          v                / \/ hi: reset
+;     0 -> carry ---------->| |
+;                           |a|
+;    rev         car-or-0   | |
+;  x ----> xr-------------->|d|
+;          ^ \cdr           | |
+;    rev   \_/   car-or-0   |d|
+;  y ----> yr-------------->| |
+;          ^ \cdr           \_/\ lo: cons
+;          \_/                 v
+;    () -> sum --------------------> x+y
 
 (label bin-add-denorm (lambda (x y)
-    (bin-add-carrying (reverse y) (reverse x) '(())) ))
+    (  (label bin-add-carrying (lambda (yr xr carry sum) (cond
+            ((null  yr) (cond
+                ((null xr) (cons carry sum))
+                ( t        (bin-add-carrying '(()) xr carry sum)) ))
+            ( t (cond
+                ((null xr) (bin-add-carrying yr '(()) carry sum))
+                ( t        (bin-add-carrying
+                    (cdr yr)
+                    (cdr xr)
+                    (   (lambda (x y carry) (cond
+                            ((eq x y)     y)
+                            ( t       carry)))
+                        (car xr) (car yr) carry )
+                    (cons
+                        (   (lambda (x y carry) (cond
+                                ((eq x y)      carry)
+                                ((eq carry ())     t)
+                                ( t               ()) ))
+                            (car xr) (car yr) carry )
+                        sum )
+                     )) )) )))
+        (reverse y) (reverse x) () () ) ))
 
 
 (label bin-add (lambda (x y)
     (discard-car-while-eq () (bin-add-denorm x y)) ))
 
 
+; Unused??
 (label bit-mult (lambda (x y) (cond ((and (eq x t) (eq y t))  t)
                                     ( t                      ()) )))
 
