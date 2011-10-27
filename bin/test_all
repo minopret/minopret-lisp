@@ -1,0 +1,8 @@
+#!/bin/sh
+MNPBASE=`dirname $0`/..
+cd $MNPBASE
+for file in test/test*.sh
+  do
+    echo $file
+    $file
+  done
