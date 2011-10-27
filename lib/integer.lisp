@@ -514,16 +514,14 @@
                 ( t        (bin-add-carrying
                     (cdr yr)
                     (cdr xr)
-                    (   (lambda (x y carry) (cond
-                            ((eq x y)     y)
-                            ( t       carry)))
-                        (car xr) (car yr) carry )
+                    (cond  ; compute new high (carry) digit
+                        ((eq (car xr) (car yr)) (car yr))
+                        ( t                      carry  ) )
                     (cons
-                        (   (lambda (x y carry) (cond
-                                ((eq x y)      carry)
-                                ((eq carry ())     t)
-                                ( t               ()) ))
-                            (car xr) (car yr) carry )
+                        (cond  ; compute new low digit
+                            ((eq (car xr) (car yr)) carry)
+                            ((eq  carry   ())       t    )
+                            ( t                     ()   ) )
                         sum )
                      )) )) )))
         (reverse y) (reverse x) () () ) ))
