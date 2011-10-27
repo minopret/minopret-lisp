@@ -488,19 +488,21 @@
 
 ; I owe a diagram for this function because I have inlined several
 ; small clearly delineated functions that I had developed separately.
-;           ___________________
-;          |                 _ \
-;          v                / \/ hi: reset
-;     0 -> carry ---------->| |
-;                           |a|
-;    rev         car-or-0   | |
-;  x ----> xr-------------->|d|
-;          ^ \cdr           | |
-;    rev   \_/   car-or-0   |d|
-;  y ----> yr-------------->| |
-;          ^ \cdr           \_/\ lo: cons
-;          \_/                 v
-;    () -> sum --------------------> x+y
+;
+;              Initialize      Recursion      Base case
+;              ==========      =========      =========
+;                            _ x or y != ()_  x,y = ()  
+;                           / \           / \
+;     0 -> carry ---------->|A|---------->|A|---> 0
+;                           | | high      | | high
+;    rev      car-or-0      | |  car-or-0 | |
+;  x ----> xr-------------->|D|   ------->|D|
+;        cdr `-------------------'-------------->()
+;        cdr ,---------------------------------->()
+;  y ----> yr-------------->|D|  `------->|D|
+;    rev      car-or-0      \_/\ car-or-0 \_/\
+;                              v low:cons    v low:cons
+;    () -> sum -----------------------------------------> x+y
 
 (label bin-add-denorm (lambda (x y)
     (  (label bin-add-carrying (lambda (yr xr carry sum) (cond
