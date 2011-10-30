@@ -76,6 +76,13 @@ class Env(dict):
         else:
             return None
 
+    def __str__(self):
+        s = '('
+        for x in self:
+            s += '(' + str(x) + ' ' + str(self[x]) + ') '
+        s += ')'
+        return s
+
 
 # defined with "def" rather than lambda
 # for sake of better Python traces
@@ -97,10 +104,6 @@ def cons_(x, y):
 
 def eq_(x, y):
     return Symbol('t') if x == y else Expr()
-
-
-def lambda_(params, body, env):
-    return lambda *args: eval_(body, Env(params, args, env))
 
 
 def mk_builtins(env):
@@ -129,48 +132,66 @@ class Procedure(object):
     def __call__(self, *args):
         return eval_(self.body, Env(self.params, args, self.env))
     def __str__(self):
-        return self.name
+        if len(self.name) > 0:
+            return self.name
+        else:
+            return 'lambda[' + str(self.params) + '; ' + str(self.body) + \
+                '; ' + str(self.env) + ']'
 
 
 env0 = mk_builtins(Env())
 
 
-def eval_(x, env=env0):
+def eval_(x, env=env0, depth=0):
     from sys import exit
     from types import FunctionType
 
+    if trace:
+        is_tail_call = False
+        print ('>' * depth) + ' Evaluate ',
+
     while True:  # Be ready to reprocess any proper tail calls.
         if trace:
-            print 'Evaluate ' + str(x) + '.'
+            if is_tail_call:
+                print ('>' * depth) + '  Restate:',
+            is_tail_call = True
+            print str(x) + '.'
 
         if isinstance(x, Symbol) or x == Expr():  # (atom x)
             e = env.find(x)
-            return (e[x] if e != None else x)
+            exp = (e[x] if e != None else x)
+            if trace:
+                print ('>' * depth) + '  Result:  ' + str(exp) + '.'
+            return exp
 
         elif x[0] == 'quote':
             exp = x[1]
+            if trace:
+                print ('>' * depth) + '  Result: ' + str(exp) + '.'
             return exp  # No tail call needed.
 
         elif x[0] == 'trace':
             exp = x[1]
-            val = eval_(exp, env)  # near-miss tail call
+            val = eval_(exp, env, depth + 1)  # near-miss tail call
             print 'Trace ' + str(exp) + ': ' + str(val) + '.'
             return val
 
         elif x[0] == 'cond':
             pairs = x[1:]
             if len(pairs) == 0:     # In other implementations is it an error?
+                if trace:
+                    print ('>' * depth) + '  Result: ().'
                 return Expr()
             else:
                 (test, action) = pairs[0]
-                if not boolean(eval_(test, env)):  # NOT NEARLY a tail call
+                if not boolean(eval_(test, env, depth + 1)):  # NOT NEARLY a tail call
                     action = Expr([x[0]] + list(x[2:]))
                 x = action  # proper tail call
 
         elif x[0] == 'label':
             name = x[1]
             value = x[2]
-            evalue = eval_(value, env)  # near-miss tail call
+            evalue = eval_(value, env, depth + 1)  # near-miss tail call
             env[name] = evalue
             if isinstance(evalue, Procedure):
                 evalue.name = name
@@ -203,7 +224,10 @@ def eval_(x, env=env0):
         elif x[0] == 'lambda':
             params = x[1]
             body = x[2]
-            return Procedure(params, body, env)
+            exp = Procedure(params, body, env)
+            if trace:
+                print ('>' * depth) + '  Result: ' + str(exp) + '.'
+            return exp
 
         # Actually Paul Graham writes 'lambda' in Common Lisp as:
         #((eq (caar e) 'lambda)
@@ -220,7 +244,7 @@ def eval_(x, env=env0):
             exit()
 
         else:
-            y = [eval_(xi, env) for xi in x]  # NOT tail calls
+            y = [eval_(xi, env, depth + 1) for xi in x]  # NOT tail calls
             y0 = y.pop(0)
             y = Expr(y)
             if trace:
@@ -228,9 +252,12 @@ def eval_(x, env=env0):
                     n = y0.__name__
                 else:
                     n = str(y0)
-                print 'Apply ' + n + ' to ' + str(y) + '.'
+                print ('>' * depth) + '    Apply ' + n + ' to ' + str(y) + '.'
             if isinstance(y0, Procedure):
                 x = y0.body
                 env = Env(y0.params, y, y0.env)  # proper tail call
             else:
-                return y0(*y)  # apply a Python function from env
+                exp = y0(*y)  # apply a Python function from env
+                if trace:
+                    print ('>' * depth) + '  Result: ' + str(exp) + '.'
+                return exp
