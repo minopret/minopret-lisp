@@ -22,9 +22,9 @@
 
 
 ; Nonce function
-(label discard-car-while-eq (lambda (x y) (cond
+(label cdr-while-car-eq (lambda (x y) (cond
     ((null (cdr y))  y)  ; in my uses I want at least one element
-    ((eq x (car y)) (discard-car-while-eq x (cdr y)))
+    ((eq x (car y)) (cdr-while-car-eq x (cdr y)))
     ( t              y) )))
 
 
@@ -130,10 +130,16 @@
 (label trit-neg (lambda (x) (assoc x '( (+ -) (0 0) (- +) ) )))
 
 
-; near-miss tail call
-(label bal3-neg (lambda (x) (cond
-    ((null x)  ())
-    ( t        (cons (trit-neg (car x)) (bal3-neg (cdr x)))) )))
+; bal3-neg: Simpler non-tail-recursive version.
+;(label bal3-neg (lambda (x) (cond
+;    ((null x)  ())
+;    ( t        (cons (trit-neg (car x)) (bal3-neg (cdr x)))) )))
+; bal3-neg: More complex tail-recursive version.
+(label bal3-neg (lambda (x) (
+    (label bal3-neg-rec (lambda (xr x) (cond
+        ((null xr)  x)
+        ( t        (bal3-neg-rec (cdr xr) (cons (trit-neg (car xr)) x))) )))
+    (reverse x) () )))
 
 
 (label bal3-minus (lambda (x y) (bal3-add x (bal3-neg y))))
@@ -145,7 +151,7 @@
 
 (label dec-pred (lambda (x) (cond
     ((eq x '(0)) '(0))  ; +0. - +1. := +0. because we can't go lower
-    ( t            (discard-car-while-eq '() (cadr (dec-pred-rec x)))) )))
+    ( t            (cdr-while-car-eq '() (cadr (dec-pred-rec x)))) )))
 
 
 (label dec-pred-rec (lambda (x) (cond
@@ -355,11 +361,11 @@
 
 
 (label bal3-add (lambda (x y)
-    (discard-car-while-eq '0 (bal3-add-denorm x y)) ))
+    (cdr-while-car-eq '0 (bal3-add-denorm x y)) ))
 
 
 (label dec-add (lambda (x y)
-    (discard-car-while-eq '0 (dec-add-denorm x y)) ))
+    (cdr-while-car-eq '0 (dec-add-denorm x y)) ))
 
 
 ; Balanced-ternary multiplication.
@@ -445,7 +451,7 @@
 
 ; params:  m: left multiplicand, a bal3
 ;          n: one digit of right multiplicand, a trit
-;         cp: car: digits carried from sum of previous digit products, a bal3
+;        cp0: car: digits carried from sum of previous digit products, a bal3
 ;            cadr: digits completed from sum of previous digit products,
 ;                  a list of trit (difference from a bal3: can be empty)
 ; return:     car: digits carried from sum of digit products with carry
@@ -459,35 +465,25 @@
 ; No implementation yet.
 
 ; The predecessor function for unsigned arbitrary-precision binary numbers.
-; Here we pay a price for storing the most-significant bit first.
-; tail call: discard-car-while-eq
 (label bin-pred (lambda (x) (cond
-    (   (eq x '(()))
-       '(()))  ; +0; - +1; := +0; because we can't go lower
-    (    t            
-        (discard-car-while-eq '() (cadr (
-            (label bin-pred-rec (lambda (x) (cond
-                (   (eq x '(())) '( t ( t)))      ; borrow: +0 - +1 == -1:+1
-                (   (eq x '( t)) '(() (())))      ; cancel: +1 - +1 == -0:+0
-                (    t (
-                    (lambda (x y) (cond
-                        ((eq (car y) ()) (list () (cons  x (cadr y))))
-                        ((eq      x   t) (list () (cons () (cadr y))))
-                        ( t              (list  t (cons  t (cadr y)))) ))
-                    (car x)
-                    (bin-pred-rec (cdr x)) ) ) )))  ; FIXME not tail recursive
-             x ))) ) )))
+    ((eq x '(())) '(()))  ; +0; - +1; := +0; because we can't go lower.
+    ((eq x '( t)) '(()))  ; The exception to the rule of no leading zeroes.
+    ( t            (
+        (label bin-pred-rec (lambda (xr x) (cond
+            ((car xr) (
+                (label bin-pred-cons (lambda (xr x) (cond
+                    ((null xr) (cdr-while-car-eq '() x))
+                    ( t (bin-pred-cons (cdr xr) (cons (car xr) x))) )))
+                (cdr xr) (cons () x) ))
+            ( t       (bin-pred-rec (cdr xr) (cons  t x))) )))
+        (reverse x)
+        () )) )))
 
 
-; Now binary digits. First let's write bitwise addition as an operation table.
-; We'll need three operands to handle a carry bit from the previous column.
-; (label bit-add (lambda (x y c) (assoc-equal (cons x (list y c))
-;     '(((0 0 0) (0 0))  ((0 0 1) (0 1))  ((0 1 0) (0 1))  ((0 1 1) (1 0))
-;       ((1 0 0) (0 1))  ((1 0 1) (1 0))  ((1 1 0) (1 0))  ((1 1 1) (1 1))) )))
-
-
-; I owe a diagram for this function because I have inlined several
-; small clearly delineated functions that I had developed separately.
+; How to add.
+; This diagram should compensate somewhat for the fact
+; that I have inlined what were originally several small,
+; clearly delineated functions.
 ;
 ;              Initialize      Recursion      Base case
 ;              ==========      =========      =========
@@ -497,12 +493,12 @@
 ;                           | | high      | | high
 ;    rev      car-or-0      | |  car-or-0 | |
 ;  x ----> xr-------------->|D|   ------->|D|
-;        cdr `-------------------'-------------->()
-;        cdr ,---------------------------------->()
+;        cdr `------------------*'-------------->()
+;        cdr ,------------------*--------------->()
 ;  y ----> yr-------------->|D|  `------->|D|
 ;    rev      car-or-0      \_/\ car-or-0 \_/\
 ;                              v low:cons    v low:cons
-;    () -> sum -----------------------------------------> x+y
+;    () -> sum ----------------*-------------*----------> x+y
 
 (label bin-add-denorm (lambda (x y)
     (  (label bin-add-carrying (lambda (yr xr carry sum) (cond
@@ -528,12 +524,12 @@
 
 
 (label bin-add (lambda (x y)
-    (discard-car-while-eq () (bin-add-denorm x y)) ))
+    (cdr-while-car-eq () (bin-add-denorm x y)) ))
 
 
-; Unused??
-(label bit-mult (lambda (x y) (cond ((and (eq x t) (eq y t))  t)
-                                    ( t                      ()) )))
+; A routine "bit-mult" to multiply two bits is not provided here.
+; It is identical to existing function "and".
+; It is not needed in binary arithmetic routines.
 
 
 (label bin-mult-bit (lambda (x y) (cond ((eq y ()) '(()))
@@ -541,13 +537,15 @@
 
 
 (label bin-mult (lambda (m n) (
-    (label bin-mult-bitwise (lambda (nr m cp0) (cond
+    (label bin-mult-bitwise (lambda (nr carry-product) (cond
         (   (null   (cdr nr))
-            (append (bin-add (car cp0) (bin-mult-bit m (car nr))) (cadr cp0)) )
+            (append (bin-add (car carry-product) (bin-mult-bit m (car nr)))
+                    (cadr carry-product) ) )
         (    t
-            (bin-mult-bitwise (cdr nr) m (
-                (lambda (pc1) (list (cdr pc1)
-                                    (cons (car pc1) (cadr cp0)) ))
+            (bin-mult-bitwise (cdr nr) (
+                (lambda (new-product-carry) (list
+                    (cdr new-product-carry)
+                    (cons (car new-product-carry) (cadr carry-product)) ))
                 (rotate-right (bin-add-denorm (bin-mult-bit m (car nr))
-                                              (car cp0) )) )) ) )))
-    (reverse n) m '((()) ()) )))
+                                              (car carry-product) )) )) ) )))
+    (reverse n) '((()) ()) )))
