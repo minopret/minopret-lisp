@@ -1,3 +1,4 @@
+# -*- encoding: utf8 -*-
 # mnpeval.py # A language much like Lisp I
 #   <http://www-formal.stanford.edu/jmc/recursive.html>
 # as interpreted by Paul Graham,
@@ -133,7 +134,7 @@ class Procedure(object):
         return eval_(self.body, Env(self.params, args, self.env))
     def __str__(self):
         if len(self.name) > 0:
-            return self.name
+            return '<procedure ' + self.name + '>'
         else:
             return 'lambda[' + str(self.params) + '; ' + str(self.body) + \
                 '; ' + str(self.env) + ']'
@@ -142,18 +143,34 @@ class Procedure(object):
 env0 = mk_builtins(Env())
 
 
+def trace_result(depth, exp):
+    print ('│' * depth) + '└  Result:  ' + str(exp) + '.'
+
+
+def trace_evaluate(depth):
+    print ('│' * (depth-1)) + ('├' if depth > 0 else '') + '┐ Evaluate ',
+
+
+def trace_apply(depth, f, x):
+    print ('│' * depth) + '├    Apply   ' + f + ' to ' + str(x) + '.'
+
+
+def trace_restate(depth):
+    print ('│' * depth) + '╞  Restate:',
+
+
 def eval_(x, env=env0, depth=0):
     from sys import exit
     from types import FunctionType
 
     if trace:
         is_tail_call = False
-        print ('>' * depth) + ' Evaluate ',
+        trace_evaluate(depth)
 
     while True:  # Be ready to reprocess any proper tail calls.
         if trace:
             if is_tail_call:
-                print ('>' * depth) + '  Restate:',
+                trace_restate(depth)
             is_tail_call = True
             print str(x) + '.'
 
@@ -161,13 +178,13 @@ def eval_(x, env=env0, depth=0):
             e = env.find(x)
             exp = (e[x] if e != None else x)
             if trace:
-                print ('>' * depth) + '  Result:  ' + str(exp) + '.'
+                trace_result(depth, exp)
             return exp
 
         elif x[0] == 'quote':
             exp = x[1]
             if trace:
-                print ('>' * depth) + '  Result: ' + str(exp) + '.'
+                trace_result(depth, exp)
             return exp  # No tail call needed.
 
         elif x[0] == 'trace':
@@ -180,7 +197,7 @@ def eval_(x, env=env0, depth=0):
             pairs = x[1:]
             if len(pairs) == 0:     # In other implementations is it an error?
                 if trace:
-                    print ('>' * depth) + '  Result: ().'
+                    trace_result(depth, '()')
                 return Expr()
             else:
                 (test, action) = pairs[0]
@@ -226,7 +243,7 @@ def eval_(x, env=env0, depth=0):
             body = x[2]
             exp = Procedure(params, body, env)
             if trace:
-                print ('>' * depth) + '  Result: ' + str(exp) + '.'
+                trace_result(depth, exp)
             return exp
 
         # Actually Paul Graham writes 'lambda' in Common Lisp as:
@@ -252,12 +269,12 @@ def eval_(x, env=env0, depth=0):
                     n = y0.__name__
                 else:
                     n = str(y0)
-                print ('>' * depth) + '    Apply ' + n + ' to ' + str(y) + '.'
+                trace_apply(depth, n, y)
             if isinstance(y0, Procedure):
                 x = y0.body
                 env = Env(y0.params, y, y0.env)  # proper tail call
             else:
                 exp = y0(*y)  # apply a Python function from env
                 if trace:
-                    print ('>' * depth) + '  Result: ' + str(exp) + '.'
+                    trace_result(depth, exp)
                 return exp
