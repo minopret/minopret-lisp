@@ -1,6 +1,4 @@
-(label and      (lambda (x y) (cond
-    (x (cond (y t) (t ())))
-    (t ()) )))
+(label and      (lambda (x y) (cond (x y) (t ()))))
 
 
 ; append: Simpler non-tail-recursive version:
@@ -20,6 +18,7 @@
 
 
 (label assoc    (lambda (x y) (cond
+    ((null y) ())
     ((eq x (caar y)) (cadar y))
     ( t              (assoc x (cdr y))) )))
 
@@ -29,6 +28,9 @@
 (label caddar   (lambda (x) (car (cdr (cdr (car x))))))     ; x[0,2]
 (label cadr     (lambda (x) (car (cdr x))))                 ; x[1]
 (label caddr    (lambda (x) (car (cdr (cdr x)))))           ; x[2]
+
+
+; eval: meta-circular evaluator goes here
 
 
 (label list     (lambda (x y) (cons x (cons y ()))))
