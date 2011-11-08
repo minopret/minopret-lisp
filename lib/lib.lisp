@@ -10,10 +10,27 @@
 ; cxxxxr
 ; equal
 ; fold-left
+; fold-right
 ; merge-sort
 ; or
 ; reverse
 ; rotate-right
+; transpose
+
+
+; Standard: none. Roughly similar functionality to lisp-unit.
+(label assert-equal (lambda (x y) (cond
+    ((equal x y) t)
+    (         t (append (list 'Expecting y) (list 'found x))) )))
+
+
+; Some day this and assoc could benefit from using a self-balancing tree,
+; a sorted sequence offering its length and binary search using unrolled loops,
+; a hash function, whatever.
+; Standard: Common Lisp.
+(label assoc-equal (lambda (x a) (cond
+    ((equal x (caar a)) (cadar a))
+    (               t   (assoc-equal x (cdr a))) )))
 
 
 ; The rest of cxxr, cxxxr, cxxxxr, with notes on what they do (in Pascal-ish syntax).
@@ -71,29 +88,19 @@
             (car x) (cdr x) (car y) (cdr y) )) )) )))
 
 
-; Standard: none. Roughly similar functionality to lisp-unit.
-(label assert-equal (lambda (x y) (cond
-    ((equal x y) t)
-    (         t (append (list 'Expecting y) (list 'found x))) )))
-
-
 ; Here's a quick way to generalize many binary operations to n-ary operations.
 ; Standard: Scheme programming language "fold".
-; This is not yet tested.
 (label fold-left (lambda (f z u) (cond
     ((null u)           z)
     ((atom u)          (f z u))  ; I'm guessing that this is a good choice.
     ((null    (cdr u)) (f z (car u)))
-    (              t   (fold-left (f z (car u)) (cdr u))) )))
+    ( t                (fold-left f (f z (car u)) (cdr u))) )))
 
 
-; Some day this and assoc could benefit from using a self-balancing tree,
-; a sorted sequence offering its length and binary search using unrolled loops,
-; a hash function, whatever.
-; Standard: Common Lisp.
-(label assoc-equal (lambda (x a) (cond
-    ((equal x (caar a)) (cadar a))
-    (               t   (assoc-equal x (cdr a))) )))
+(label fold-right (lambda (f z u) (fold-left
+    (lambda (y x) (f x y))
+     z
+    (reverse u) )))
 
 
 ; This merge-sort and its helper merge-sort-merge are not yet tested.
@@ -118,17 +125,33 @@
          (merge-sort-merge (cons (car y) s) x (cdr y) order)) )) )))
 
 
-(label or (lambda (x y) (cond (x t) (t y))))
+(label or (lambda (x y) (cond (x x) (t y))))
 
 
 (label reverse (lambda (x) (
-    (label reverse-rev (lambda (xr x) (cond
+    (label reverse-rec (lambda (xr x) (cond
         ((null x) xr)
         ((atom x) x)
-        (t (reverse-rev (cons (car x) xr) (cdr x))) )))
+        (t (reverse-rec (cons (car x) xr) (cdr x))) )))
     () x )))
 
 
 (label rotate-right (lambda (x) ( 
     (lambda (xr) (cond ((atom xr) xr) (t (cons (car xr) (reverse (cdr xr))))))
     (reverse x) )))
+
+
+(label transpose (lambda (m) (
+    (label transpose_rec (lambda (mr mt) (cond
+        ((null mr)  mt)
+        ((null mt) (
+            (label transpose_first (lambda (rr mrs rt) (cond
+                ((null rr) (transpose_rec mrs rt))
+                ( t        (transpose_first (cdr rr) mrs (cons (cons (car rr) ()) rt))) )))
+            (reverse (car mr)) (cdr mr) () ))
+        ( t        (
+            (label transpose_next (lambda (rr mrs mtr mtl) (cond
+                ((null rr) (transpose_rec mrs mtl))
+                ( t        (transpose_next (cdr rr) mrs (cdr mtr) (cons (cons (car rr) (car mtr)) mtl) )) )))
+            (reverse (car mr)) (cdr mr) (reverse mt) () )) )))
+    (reverse m) () )))
