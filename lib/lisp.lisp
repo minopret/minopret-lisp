@@ -30,7 +30,45 @@
 (label caddr    (lambda (x) (car (cdr (cdr x)))))           ; x[2]
 
 
-; eval: meta-circular evaluator goes here
+; A funarg device.
+; Not authentic Lisp 1. Possibly Lisp 1.5. Definitely Scheme-ish.
+; params: x, expression (atom) to find
+;         a, list of assoc lists, most recent first
+; return:  car: an assoc list in a that has key x, if any; or else ()
+;         cadr: the value for x in that assoc list, if any; or else ()
+(label env-find (lambda (x a) (cond
+    ((null x) (list () ()))
+    ((atom a) (list () ()))
+    ( t       (
+        (lambda (alist-value) (cond
+            ((cadr alist-value)  alist-value)
+            ( t                 (env-find x (cdr a))) ))
+        (
+            (label env-assoc (lambda (x y) (cond
+                ((null y)           (list () ()))
+                ((eq x (caar y))    (list y (cadar y)))
+                ( t                 (env-assoc x (cdr y))) )))
+             x (car a) ) )) )))
+
+
+; a: list of assoc lists, most recent first
+;(label eval     (lambda (x a) (cond
+    ;((atom x) (
+        ;(lambda (alist-value) (cond
+        ;   ((null (car alist-value))    x)
+        ;   ( t                         (cadr alist-value)) ))
+        ;(env-assoc x a) ))
+    ;((eq (car x) 'quote) (cadr x))
+    ;((eq (car x) 'cond) (
+        ;(lambda (pairs) (cond
+            ;((null pairs) ())  ; standard?
+            ;((eval (car pairs) a)
+                ;(eval (cadar pairs) a))  ; proper tail call
+            ;( t
+                ;(eval (cons 'cond (cdr pairs)) a))  ; proper tail call
+        ;))
+        ;(cdr x) ))
+    ;((eq (car x) 'label) (
 
 
 (label list     (lambda (x y) (cons x (cons y ()))))
