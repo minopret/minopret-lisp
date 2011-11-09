@@ -219,25 +219,37 @@ def eval_(x, env=env0, depth=0):
         #     (eval. (cons (caddar e) (cdr e))
         #            (cons (list. (cadar e) (car e)) a)))
         #
-        # Example of use (??)
-        # ( (label f ( (lambda (x) (cond ((null x) ()) (t (cdr x)))) ))  '(a b) )
-        # # which in Python might be: # elif x[0][0] == 'label':
-        #     label_expr = x[0]
-        #     args = list(x[1:])  # convert from Expr
-        #     label_name = x[0][1]
-        #     label_value = x[0][2]
-        #     env1 = Env((label_name), (label_expr), env)
-        #     return eval_(Expr([(label_value)] + args), env1)
+        # The effect is to rewrite one eval as another:
         #
-        # but could instead destructively update the existing environment:
-        # elif x[0][0] == 'label':
-        #     label_name = x[0][1]
-        #     label_value = x[0][2]
-        #     label_expr = x[0]
-        #     args = list(x[1:])  # convert from Expr
-        #     env[label_name] = label_expr
-        #     return eval_(Expr([(label_value)] + args), env)
-
+        # eval @
+        #   e: ((label theLabelName aFuncDefUsingTheLabelName) someArguments)
+        #   a: (someEnvironmentPairs)
+        # =>
+        # eval @
+        #   e: (aFuncDefUsingTheLabelName someArguments)
+        #   a: (
+        #       (theLabelName (label theLabelName aFuncDefUsingTheLabelName))
+        #       someEnvironmentPairs
+        #      )
+        #
+        # Defined this way, "label" can really only be used in
+        # a couple of ways:
+        #  * If we apply a "label"-headed list to arguments,
+        #    we apply the recursive function so defined
+        #    to those arguments--and then the function is out of scope.
+        #  * If we specify a "label"-headed list as the value of
+        #    a key-value pair in the a-list argument to "eval",
+        #    then we can use the corresponding key wherever we could
+        #    wish to use the recursive function, and "eval"
+        #    will get around to this case. Note that the key
+        #    need NOT be the same as the label name. That is
+        #    why the label name must be added to the environment
+        #    when evaluating the body of the recursive function.
+        #
+        #    So, every non-trivial program in the Lisp that relies
+        #    on "label" to bind recursive functions MUST place
+        #    recursive function definitions into the a-list
+        #    of an "eval" call.
         elif x[0] == 'lambda':
             params = x[1]
             body = x[2]
