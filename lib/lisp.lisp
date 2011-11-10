@@ -90,7 +90,7 @@
     ((null (cdr x)) (list (car x) (car y)) )
     ( t             (
         (label pair-rev (lambda (xr yr x y) (cond
-            ((cond ((null x) t) (t (null y))) (
+            ((not (and x y)) (
                 (label pair-cons (lambda (xr yr z) (cond
                     ((null xr) z)
                     ( t        (pair-cons (cdr xr)
