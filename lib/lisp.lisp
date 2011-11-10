@@ -1,4 +1,4 @@
-(label and      (lambda (x y) (cond (x y) (t ()))))
+(and            (lambda (x y) (cond (x y) (t ()))))
 
 
 ; append: Simpler non-tail-recursive version:
@@ -6,7 +6,7 @@
 ;     ((null x) y)
 ;     ( t      (cons (car x) (append (cdr x) y))) )))
 ; append: More complex tail-recursive version:
-(label append   (lambda (x y) (
+(append         (lambda (x y) (
     (label append-rev (lambda (xr x y) (cond 
         ((null x) (
             (label append-cons (lambda (xr y) (cond
@@ -17,17 +17,17 @@
     () x y)))
 
 
-(label assoc    (lambda (x y) (cond
+(assoc          (label assoc    (lambda (x y) (cond
     ((null y) ())
     ((eq x (caar y)) (cadar y))
-    ( t              (assoc x (cdr y))) )))
+    ( t              (assoc x (cdr y))) ))))
 
 
-(label caar     (lambda (x) (car (car x))))                 ; x[0,0]
-(label cadar    (lambda (x) (car (cdr (car x)))))           ; x[0,1]
-(label caddar   (lambda (x) (car (cdr (cdr (car x))))))     ; x[0,2]
-(label cadr     (lambda (x) (car (cdr x))))                 ; x[1]
-(label caddr    (lambda (x) (car (cdr (cdr x)))))           ; x[2]
+(caar           (lambda (x) (car (car x))))                 ; x[0,0]
+(cadar          (lambda (x) (car (cdr (car x)))))           ; x[0,1]
+(caddar         (lambda (x) (car (cdr (cdr (car x))))))     ; x[0,2]
+(cadr           (lambda (x) (car (cdr x))))                 ; x[1]
+(caddr          (lambda (x) (car (cdr (cdr x)))))           ; x[2]
 
 
 ; A funarg device.
@@ -36,7 +36,7 @@
 ;         a, list of assoc lists, most recent first
 ; return:  car: an assoc list in a that has key x, if any; or else ()
 ;         cadr: the value for x in that assoc list, if any; or else ()
-(label env-find (lambda (x a) (cond
+(env-find       (label env-find (lambda (x a) (cond
     ((null x) (list () ()))
     ((atom a) (list () ()))
     ( t       (
@@ -48,7 +48,7 @@
                 ((null y)           (list () ()))
                 ((eq x (caar y))    (list y (cadar y)))
                 ( t                 (env-assoc x (cdr y))) )))
-             x (car a) ) )) )))
+             x (car a) ) )) ))))
 
 
 ; a: list of assoc lists, most recent first
@@ -71,13 +71,13 @@
     ;((eq (car x) 'label) (
 
 
-(label list     (lambda (x y) (cons x (cons y ()))))
+(list           (lambda (x y) (cons x (cons y ()))))
 
 
-(label not      (lambda (x) (cond (x ()) (t t))))
+(not            (lambda (x) (cond (x ()) (t t))))
 
 
-(label null     (lambda (x) (eq x ())))
+(null           (lambda (x) (eq x ())))
 
 
 ; pair: Simpler non-tail-recursive version:
@@ -86,7 +86,7 @@
 ;     ((null y) ())
 ;     ( t       (cons (list (car x) (car y)) (pair (cdr x) (cdr y)))) )))
 ; pair: More complex tail-recursive version:
-(label pair     (lambda (x y) (cond
+(pair           (lambda (x y) (cond
     ((null (cdr x)) (list (car x) (car y)) )
     ( t             (
         (label pair-rev (lambda (xr yr x y) (cond
