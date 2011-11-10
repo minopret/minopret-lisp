@@ -124,21 +124,6 @@ def boolean(x):
     return True if x != Expr() else False
 
 
-class Procedure(object):
-    def __init__(self, params, body, env):
-        self.params = params
-        self.body = body
-        self.env = env
-        self.name = ''
-    def __call__(self, *args):
-        return eval_(self.body, Env(self.params, args, self.env))
-    def __str__(self):
-        if len(self.name) > 0:
-            return '<procedure ' + self.name + '>'
-        else:
-            return 'lambda[' + str(self.params) + '; ' + str(self.body) + \
-                '; ' + str(self.env) + ']'
-
 
 env0 = mk_builtins(Env())
 
@@ -172,7 +157,8 @@ def eval_(x, env=env0, depth=0):
             if is_tail_call:
                 trace_restate(depth)
             is_tail_call = True
-            print str(x) + '.'
+            print str(x) + ' in env ' + str(env)  + '.'
+            #print str(x) + '.'
 
         if isinstance(x, Symbol) or x == Expr():  # (atom x)
             e = env.find(x)
@@ -205,14 +191,12 @@ def eval_(x, env=env0, depth=0):
                     action = Expr([x[0]] + list(x[2:]))
                 x = action  # proper tail call
 
-        elif x[0] == 'label':
-            name = x[1]
-            value = x[2]
-            evalue = eval_(value, env, depth + 1)  # near-miss tail call
-            env[name] = evalue
-            if isinstance(evalue, Procedure):
-                evalue.name = name
-            return evalue
+        elif x[0][0] == 'label':
+            label = x[0][1]
+            value = x[0][2]  # typically (lambda (...) (...))
+
+            env = Env((label,), (x[0],), env)
+            x = Expr([value] + list(x[1:]))
 
         # Actually Paul Graham writes 'label' in Common Lisp as:
         #((eq (caar e) 'label)
@@ -222,13 +206,13 @@ def eval_(x, env=env0, depth=0):
         # The effect is to rewrite one eval as another:
         #
         # eval @
-        #   e: ((label theLabelName aFuncDefUsingTheLabelName) someArguments)
+        #   e: ((label theLabelName theDef) someArguments)
         #   a: (someEnvironmentPairs)
         # =>
         # eval @
-        #   e: (aFuncDefUsingTheLabelName someArguments)
+        #   e: (theDef someArguments)
         #   a: (
-        #       (theLabelName (label theLabelName aFuncDefUsingTheLabelName))
+        #       (theLabelName (label theLabelName theDef))
         #       someEnvironmentPairs
         #      )
         #
@@ -250,43 +234,46 @@ def eval_(x, env=env0, depth=0):
         #    on "label" to bind recursive functions MUST place
         #    recursive function definitions into the a-list
         #    of an "eval" call.
-        elif x[0] == 'lambda':
-            params = x[1]
-            body = x[2]
-            exp = Procedure(params, body, env)
-            if trace:
-                trace_result(depth, exp)
-            return exp
+
+        elif x[0][0] == 'lambda':
+            params = x[0][1]
+            body = x[0][2]
+            args = x[1:]
+            args = [eval_(xi, env, depth + 1) for xi in args]  # NOT tail calls
+            env = Env(params, args, env)
+            x = Expr(body)
 
         # Actually Paul Graham writes 'lambda' in Common Lisp as:
         #((eq (caar e) 'lambda)
         #     (eval. (caddar e)
         #            (append. (pair. (cadar e) (evlis. (cdr e) a))
         #                             a)))
-        # which in Python might be:
-        # elif x[0][0] == 'lambda':
-        #     y = [eval_(xi, env) for xi in x[1:]]
-        #     env1 = Env(x[0][1], y, env)
-        #     return eval_(x[0][2], env1)
-
+        # which implements the following rewrite:
+        # eval @
+        #   x: ((lambda params body) args)
+        #   a: (someEnvironmentPairs)
+        # ==>
+        # eval @
+        #   x:  body
+        #   a: (append (pair params args) someEnvironmentPairs)
+        
+        
         elif x[0] == 'quit':
             exit()
 
         else:
-            y = [eval_(xi, env, depth + 1) for xi in x]  # NOT tail calls
+            y = list(x)
             y0 = y.pop(0)
-            y = Expr(y)
-            if trace:
-                if isinstance(y0, FunctionType):
+            y0 = eval_(y0, env, depth + 1)  # NOT a tail call
+            if isinstance(y0, FunctionType):
+                y = [eval_(xi, env, depth + 1) for xi in y]  # NOT tail calls
+                y = Expr(y)
+                if trace:
                     n = y0.__name__
-                else:
-                    n = str(y0)
-                trace_apply(depth, n, y)
-            if isinstance(y0, Procedure):
-                x = y0.body
-                env = Env(y0.params, y, y0.env)  # proper tail call
-            else:
-                exp = y0(*y)  # apply a Python function from env
+                    trace_apply(depth, n, y)
+                exp = y0(*y)
                 if trace:
                     trace_result(depth, exp)
                 return exp
+            else:
+                x = Expr([y0] + list(y))
