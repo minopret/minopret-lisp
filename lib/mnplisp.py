@@ -14,26 +14,24 @@ def read_exprs(prompt=None):
     return x
 
 
-def read_eval_print(prompt=None):
+def read_eval_print(env_pairs_string, prompt=None):
     from sys import exit
     from types import FunctionType
-    from mnpeval import eval_
+    from mnpeval import eval_, eval_adding_alist
+    from mnpread import string_to_expr
     import traceback
 
     try:
+        a = None
+        if len(env_pairs_string) > 0:
+            a = string_to_expr(env_pairs_string)[0]
         x = read_exprs(prompt=prompt)
 
         for xi in x:
-
-            # Macros go here. I'm not enthusiastic about macros.
-            # However, they seem the most convenient way by far to
-            # implement (load).
-            #if isinstance(xi, list) and len(xi) > 1 and xi[0] == 'load':
-            #    basename = xi[1]
-            #    # Perhaps check whether the file has been loaded previously.
-            #    # Handle input from the referenced file here.
-
-            yi = eval_(xi)
+            if a != None:
+                yi = eval_adding_alist(xi, alist=a)
+            else:
+                yi = eval_(xi)
             if yi != None and str(yi) != '' \
                     and not isinstance(yi, FunctionType):
                 print yi
@@ -45,9 +43,9 @@ def read_eval_print(prompt=None):
         traceback.print_exc()
 
 
-def read_eval_print_loop(prompt='mnplisp> '):
+def read_eval_print_loop(env_pairs_string, prompt='mnplisp> '):
     while True:
-        read_eval_print(prompt)
+        read_eval_print(env_pairs_string, prompt)
 
 
 def main():
@@ -74,14 +72,31 @@ def main():
         help='list every function as it is evaluated or applied',
     )
 
+    arg_parser.add_argument(
+        '-M',
+        dest='modules',
+        #action='append',
+        default=[],
+        nargs='*',
+        help='load space-separated library modules before running',
+    )
+
     args = arg_parser.parse_args()
     if args.trace == 'tron':
         set_trace(True)
 
+    env_pairs_string = ''
+    for m in args.modules:
+        f = open(str(m) + '.lisp')
+        env_pairs_string += f.read()
+        f.close()
+    if len(env_pairs_string) > 0:
+        env_pairs_string = "(\n" + env_pairs_string + "\n)\n"
+
     if args.input == 'interactive':
-        read_eval_print_loop()
+        read_eval_print_loop(env_pairs_string)
     else:
-        read_eval_print()
+        read_eval_print(env_pairs_string)
 
 
 if __name__ == "__main__":

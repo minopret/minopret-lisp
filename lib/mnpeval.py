@@ -63,8 +63,11 @@ def set_trace(is_trace=False):
 # If I understand correctly, this is the Funarg device.
 # The Funarg device implements lexical scope and closures.
 class Env(dict):
-    def __init__(self, params=Expr(), args=Expr(), outer=None):
-        self.update(zip(params, args))
+    def __init__(self, params=Expr(), args=Expr(), outer=None, alist=None):
+        if params != None and args != None:
+            self.update(zip(params, args))
+        elif alist != None:
+            self.update(alist)
         self.outer = outer
 
     def find(self, x):
@@ -77,12 +80,22 @@ class Env(dict):
         else:
             return None
 
-    def __str__(self):
-        s = '('
+    def str_helper(self, rec=False):
+        if rec == False:
+            s = '('
+        else:
+            s = ";\n"
         for x in self:
             s += '(' + str(x) + ' ' + str(self[x]) + ') '
-        s += ')'
+        ## For times when we want to see buckets of env. values.
+        #if self.outer != None:
+        #    s += self.outer.str_helper(rec=True)
+        if rec == False:
+            s += ')'
         return s
+
+    def __str__(self):
+        return self.str_helper()
 
 
 # defined with "def" rather than lambda
@@ -142,6 +155,11 @@ def trace_apply(depth, f, x):
 
 def trace_restate(depth):
     print ('│' * depth) + '╞  Restate:',
+
+
+def eval_adding_alist(x, env=env0, alist=None, depth=0):
+    env1 = Env(params=None, args=None, outer=env, alist=alist)
+    return eval_(x, env1, depth)
 
 
 def eval_(x, env=env0, depth=0):
