@@ -52,7 +52,7 @@
 ; a continuation bal81 that shows the stored code point is in fact negative).
 
 ; Translation tables between US-ASCII and bal81.
-(label bal81->ascii (lambda (x) (assoc-equal x '(
+(bal81->ascii (lambda (x) (assoc-equal x '(
 ; no tab atom; no newline atom
                                                   ((1 l) !) ; no space atom
           ((1 j) #) ((1 i) $) ((1 h) %) ((1 g) &) ((1 f) ') ; no double-quote atom
@@ -73,7 +73,7 @@
 ((5 \) |) ((5 [) }) ((5 {) ~)
 ))))
 
-(label ascii->bal81 (lambda (x) (assoc x '(
+(ascii->bal81 (lambda (x) (assoc x '(
 ; no tab atom; no newline atom
                                                   (! (1 l)) ; no space atom
           (# (1 j)) ($ (1 i)) (% (1 h)) (& (1 g)) (' (1 f)) ; no double-quote atom

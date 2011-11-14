@@ -14,7 +14,7 @@
 
 ; Convert one hexadecimal digit to four binary digits,
 ; most significant bit first.
-(label hex->bit^4 (lambda (d) (assoc d
+(hex->bit^4 (lambda (d) (assoc d
     '((0 (() () () ())) (1 (() () ()  t)) (2 (() ()  t ())) (3 (() ()  t  t))
       (4 (()  t () ())) (5 (()  t ()  t)) (6 (()  t  t ())) (7 (()  t  t  t))
       (8 ( t () () ())) (9 ( t () ()  t)) (A ( t ()  t ())) (B ( t ()  t  t))
@@ -22,7 +22,7 @@
      ) )))
 
 
-(label hex->bits (lambda (h) (
+(hex->bits (lambda (h) (
     (label hex->bits-append (lambda (hr h) (cond
         ((null hr) h)
         ( t       (hex->bits-append (cdr hr)
@@ -32,7 +32,7 @@
 
 ; params: d, a hex digit
 ; return: list of two base-4 (quaternary) digits
-(label hex->quater^2 (lambda (d) (assoc d
+(hex->quater^2 (lambda (d) (assoc d
     '((0 (0 0))  (1 (0 1))  (2 (0 2))  (3 (0 3))  (4 (1 0))  (5 (1 1))
       (6 (1 2))  (7 (1 3))  (8 (2 0))  (9 (2 1))  (A (2 2))  (B (2 3))
       (C (3 0))  (D (3 1))  (E (3 2))  (F (3 3)) ) )))
@@ -40,7 +40,7 @@
 
 ; params: x and y, two base-4 (quaternary) digits
 ; return: a hex digit
-(label quater^2->hex (lambda (x y) (assoc y (assoc x
+(quater^2->hex (lambda (x y) (assoc y (assoc x
     '((0 ((0 0)  (1 1)  (2 2)  (3 3)))
       (1 ((0 4)  (1 5)  (2 6)  (3 7)))
       (2 ((0 8)  (1 9)  (2 A)  (3 B)))
@@ -49,13 +49,13 @@
 
 ; Convert four binary digits, most significant bit first,
 ; to one hexadecimal digit.
-(label bit^4->hex (lambda (x) (
+(bit^4->hex (lambda (x) (
     (cond ((car x) (cond ((cadr x) bit^2+C->hex) (t bit^2+8->hex)))
           ( t      (cond ((cadr x) bit^2+4->hex) (t bit^2->quater))) )
     (cddr x) )))
 
 
-(label bits->hex (lambda (b) (
+(bits->hex (lambda (b) (
     (label bits->hex-rec (lambda (br h) (cond 
        ((null        br ) h)
        ((null (cdr   br)) (cons
@@ -74,31 +74,31 @@
     (reverse b) () )))
 
 
-(label bit^2+C->hex (lambda (x) (cond
+(bit^2+C->hex (lambda (x) (cond
     ((car  x) (cond ((cadr x) 'F) (t 'E)))
     ((cadr x) 'D)
     ( t       'C)) ))
 
 
-(label bit^2+8->hex (lambda (x) (cond
+(bit^2+8->hex (lambda (x) (cond
     ((car  x) (cond ((cadr x) 'B) (t 'A)))
     ((cadr x) '9)
     ( t       '8) )))
 
 
-(label bit^2+4->hex (lambda (x) (cond
+(bit^2+4->hex (lambda (x) (cond
     ((car  x) (cond ((cadr x) '7) (t '6)))
     ((cadr x) '5)
     ( t       '4) )))
 
 
-(label bit^2->quater (lambda (x) (cond
+(bit^2->quater (lambda (x) (cond
     ((car  x) (cond ((cadr x) '3) (t '2)))
     ((cadr x) '1)
     ( t       '0) )))
 
 
-(label quater->bit^2 (lambda (x) (assoc x
+(quater->bit^2 (lambda (x) (assoc x
     '((0 (() ())) (1 (()  t)) (2 ( t ())) (3 ( t  t))) )))
 
 
@@ -106,13 +106,13 @@
 ; Standard: RFC 1421
 ; params: x, y, and z, three hex digits
 ; return: list of two base64 digits
-(label hex^3->base64^2 (lambda (x y z) (quater^2*3->base64^2
+(hex^3->base64^2 (lambda (x y z) (quater^2*3->base64^2
     (hex->quater^2 x) (hex->quater^2 y) (hex->quater^2 z) )))
 
 
 ; params: h, a list of hex digits
 ; return: list of base64 digits
-(label hex->base64 (lambda (h) (
+(hex->base64 (lambda (h) (
     (label hex->base64-rec (lambda (hr b) (cond
         ((null       hr )  b)
         ((null (cdr  hr)) (append
@@ -128,26 +128,26 @@
 
 ; params: x, y, and z, three pairs of base-4 (quaternary) digits
 ; return: list of two base64 digits
-(label quater^2*3->base64^2 (lambda (x y z) (list
+(quater^2*3->base64^2 (lambda (x y z) (list
     (quater^3->base64 (car  x) (cadr x) (car  y))
     (quater^3->base64 (cadr y) (car  z) (cadr z)) )))
 
 
 ; params: x and y, two base64 digits
 ; return: list of three hex digits
-(label base64^2->hex^3 (lambda (x y)
+(base64^2->hex^3 (lambda (x y)
     (quater^6*1->hex^3 (append (base64->quater^3 x) (base64->quater^3 y))) ))
 
 
 ; params: u, a list of six base-4 (quaternary) digits
 ; return: list of three hex digits
-(label quater^6*1->hex^3 (lambda (u) (cons
+(quater^6*1->hex^3 (lambda (u) (cons
     (quater^2->hex (car u) (cadr u))
     (list (quater^2->hex (caddr u)        (cadddr u))
           (quater^2->hex (car (cddddr u)) (cadr (cddddr u))) ) )))
 
 
-(label base64->hex (lambda (b) (
+(base64->hex (lambda (b) (
     (label base64->hex-rec (lambda (br b) (cond
        ((null      br )  b)
        ((null (cdr br))  ; shouldn't happen
@@ -158,7 +158,7 @@
     (reverse b) () )))
 
 
-(label base64->quater^3 (lambda (x) (assoc x '(
+(base64->quater^3 (lambda (x) (assoc x '(
     (A (0 0 0)) (B (0 0 1)) (C (0 0 2)) (D (0 0 3)) (E (0 1 0)) (F (0 1 1))
     (G (0 1 2)) (H (0 1 3)) (I (0 2 0)) (J (0 2 1)) (K (0 2 2)) (L (0 2 3))
     (M (0 3 0)) (N (0 3 1)) (O (0 3 2)) (P (0 3 3)) (Q (1 0 0)) (R (1 0 1))
@@ -174,7 +174,7 @@
 
 ; params: x, y, and z, three base-4 (quaternary) digits
 ; return: a base64 digit
-(label quater^3->base64 (lambda (x y z) (assoc z (assoc y (assoc x '(
+(quater^3->base64 (lambda (x y z) (assoc z (assoc y (assoc x '(
     (0 ((0 ((0 A) (1 B) (2 C) (3 D)))  (1 ((0 E) (1 F) (2 G) (3 H)))
         (2 ((0 I) (1 J) (2 K) (3 L)))  (3 ((0 M) (1 N) (2 O) (3 P))) ))
     (1 ((0 ((0 Q) (1 R) (2 S) (3 T)))  (1 ((0 U) (1 V) (2 W) (3 X)))
@@ -185,7 +185,7 @@
         (2 ((0 4) (1 5) (2 6) (3 7)))  (3 ((0 8) (1 9) (2 +) (3 /))) )) ))))))
 
 
-(label hex^2->quoted-printable (lambda (x y) (assoc y (cond
+(hex^2->quoted-printable (lambda (x y) (assoc y (cond
    ((eq x '2) '((0 (= 2 0))
                         (1 (!)) (2 ("))  ;((")) This comment balances hiliting.
                                         (3 (#)) (4 ($)) (5 (%))
@@ -213,7 +213,7 @@
    ( t          (cons '= (list x y))) ))))
 
 
-(label hex->quoted-printable (lambda (h) (
+(hex->quoted-printable (lambda (h) (
     (label hex->qp-rec (lambda (hr h) (cond
        ((null hr) h)
        ((null (cdr hr)) (append
@@ -226,7 +226,7 @@
 
 
 ; Just put nils in y and z if there aren't enough tokens left.
-(label quoted-printable->hex^2*pushback (lambda (x y z) (cond
+(quoted-printable->hex^2*pushback (lambda (x y z) (cond
     ((eq x '=) (cons y (list z ())))
     ( t        (append
         (assoc x '(
@@ -251,7 +251,7 @@
         (cons (list y z) ()) )) )))
 
 
-(label quoted-printable->hex (lambda (x) (
+(quoted-printable->hex (lambda (x) (
 
     ; Push back any deferred tokens and check for termination.
     (label qp->hex-rec (lambda (pushback w) (

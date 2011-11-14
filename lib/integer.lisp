@@ -22,10 +22,10 @@
 
 
 ; Nonce function
-(label cdr-while-car-eq (lambda (x y) (cond
+(cdr-while-car-eq (label cdr-while-car-eq (lambda (x y) (cond
     ((null (cdr y))  y)  ; in my uses I want at least one element
     ((eq x (car y)) (cdr-while-car-eq x (cdr y)))
-    ( t              y) )))
+    ( t              y) ))))
 
 
 ; Where I want more compactness I could use this balanced base-81 encoding
@@ -65,7 +65,7 @@
 ;                                  digits base 10: 20    44   8      11    68-69
 
 
-(label trit^4->bal81 (lambda (x) (assoc-equal x '(
+(trit^4->bal81 (lambda (x) (assoc-equal x '(
     ((- - - -) -) ((- - - 0) <) ((- - - +) \)
     ((- - 0 -) [) ((- - 0 0) {) ((- - 0 +) z)
     ((- - + -) y) ((- - + 0) x) ((- - + +) w)
@@ -95,7 +95,7 @@
     ((+ + + -) >) ((+ + + 0) /) ((+ + + +) +) ))))
 
 
-(label bal81->trit^4 (lambda (x) (assoc-equal x '(
+(bal81->trit^4 (lambda (x) (assoc-equal x '(
     (- (- - - -)) (< (- - - 0)) (\ (- - - +))
     ([ (- - 0 -)) ({ (- - 0 0)) (z (- - 0 +))
     (y (- - + -)) (x (- - + 0)) (w (- - + +))
@@ -127,7 +127,7 @@
 
 ; Balanced-ternary subtraction reduces easily to addition.
 
-(label trit-neg (lambda (x) (assoc x '( (+ -) (0 0) (- +) ) )))
+(trit-neg (lambda (x) (assoc x '( (+ -) (0 0) (- +) ) )))
 
 
 ; bal3-neg: Simpler non-tail-recursive version.
@@ -135,33 +135,33 @@
 ;    ((null x)  ())
 ;    ( t        (cons (trit-neg (car x)) (bal3-neg (cdr x)))) )))
 ; bal3-neg: More complex tail-recursive version.
-(label bal3-neg (lambda (x) (
+(bal3-neg (lambda (x) (
     (label bal3-neg-rec (lambda (xr x) (cond
         ((null xr)  x)
         ( t        (bal3-neg-rec (cdr xr) (cons (trit-neg (car xr)) x))) )))
     (reverse x) () )))
 
 
-(label bal3-minus (lambda (x y) (bal3-add x (bal3-neg y))))
+(bal3-minus (lambda (x y) (bal3-add x (bal3-neg y))))
 
 
-(label dec-digit-pred (lambda (x) (assoc x
+(dec-digit-pred (lambda (x) (assoc x
     '((1 0) (2 1) (3 2) (4 3) (5 4) (6 5) (7 6) (8 7) (9 8) (0 9)) )))
 
 
-(label dec-pred (lambda (x) (cond
+(dec-pred (lambda (x) (cond
     ((eq x '(0)) '(0))  ; +0. - +1. := +0. because we can't go lower
     ( t            (cdr-while-car-eq '() (cadr (dec-pred-rec x)))) )))
 
 
-(label dec-pred-rec (lambda (x) (cond
+(dec-pred-rec (lambda (x) (cond
     ((null (cdr x)) (cond
         ((eq (car x) '0) '(1 (9)))
         ( t               (list '0 (cons (dec-digit-pred (car x)) ()))) ))
     ( t            (dec-pred-borrow (car x) (dec-pred-rec (cdr x)))) )))
 
 
-(label dec-pred-borrow (lambda (x y) (cond
+(dec-pred-borrow (lambda (x y) (cond
     ((eq (car y) '0) (list '0 (cons  x (cadr y))))     ; ( x + -0):y = -0: x:y
     ((eq      x  '0) (list '1 (cons '9 (cadr y))))     ; (+0 + -1):y = -1:+1:y
     ( t              (list '0 (cons (dec-digit-pred x)
@@ -173,16 +173,16 @@
 
 ; Assuming normalized so that the lead digit is zero if, and only if,
 ; that is the only digit.
-(label bal3-lt0 (lambda (x) (eq (car x) '-)))
+(bal3-lt0 (lambda (x) (eq (car x) '-)))
 
 
-(label bal3-gt0 (lambda (x) (eq (car x) '+)))
+(bal3-gt0 (lambda (x) (eq (car x) '+)))
 
 
-(label bal3-lt (lambda (x y) (bal3-lt0 (bal3-minus x y))))
+(bal3-lt (lambda (x y) (bal3-lt0 (bal3-minus x y))))
 
 
-(label bal3-gt (lambda (x y) (bal3-gt0 (bal3-minus x y))))
+(bal3-gt (lambda (x y) (bal3-gt0 (bal3-minus x y))))
 
 
 ; Balanced-ternary addition. No problem...?
@@ -219,7 +219,7 @@
 ;           c: carry digit, a trit
 ; return: car: new carry digit, a trit
 ;        cadr: result digit, a trit
-(label trit-add (lambda (x y c) (assoc c (assoc y (assoc x
+(trit-add (lambda (x y c) (assoc c (assoc y (assoc x
     '((- ((- ((- (- 0)) (0 (- +)) (+ (0 -))))
           (0 ((- (- +)) (0 (0 -)) (+ (0 0))))
           (+ ((- (0 -)) (0 (0 0)) (+ (0 +)))) ))
@@ -234,7 +234,7 @@
 
 
 ; We can easily write a lookup table to add two decimal digits.
-(label dec-digit-add-pair (lambda (x y) (assoc y (assoc x
+(dec-digit-add-pair (lambda (x y) (assoc y (assoc x
     '((0 ((0 (0 0)) (1 (0 1)) (2 (0 2)) (3 (0 3)) (4 (0 4))
           (5 (0 5)) (6 (0 6)) (7 (0 7)) (8 (0 8)) (9 (0 9)) ))
       (1 ((0 (0 1)) (1 (0 2)) (2 (0 3)) (3 (0 4)) (4 (0 5))
@@ -266,7 +266,7 @@
 ;    + \ /        > output digits (w0 v0). Note, w0 can be zero.
 ; c--c--v-----v0  )
 
-(label dec-digit-add (lambda (x y c)
+(dec-digit-add (lambda (x y c)
     (   (lambda (u1-v1-v0) (list
             (cadr (dec-digit-add-pair (car u1-v1-v0) (cadr u1-v1-v0)))
             (caddr u1-v1-v0) ))
@@ -280,12 +280,12 @@
 ;           y: right addend, a trit
 ;          cs: sum of less significant digits, a bal3 with leading carry digit
 ; return:      new sum, a bal3 with leading carry digit
-(label bal3-trits-add (lambda (x y cs)
+(bal3-trits-add (lambda (x y cs)
     (append (trit-add x y (car cs)) (cdr cs)) ))
 
 
 ; near-miss self-tail call
-(label dec-digits-add (lambda (x y cs)
+(dec-digits-add (lambda (x y cs)
     (append (dec-digit-add x y (car cs)) (cdr cs)) ))
 
 
@@ -298,7 +298,7 @@
 ;           y: right addend, a bal3
 ;          cs: sum of less significant digits, a bal3 with leading carry digit
 ; return:      new sum, a bal3 with leading carry digit
-(label bal3-add-carrying (lambda (yr xr x y cs) (cond
+(bal3-add-carrying (label bal3-add-carrying (lambda (yr xr x y cs) (cond
     ((null (cdr x)) (cond       ; scanned to last digit of x: ready to add?
         ((null (cdr y)) (cond   ; scanned to last digit of y: ready to add.
             ((null yr) (cond    ; y's stack is empty
@@ -322,10 +322,10 @@
         ; y has more-significant digits that we need to stack up before adding
         ( t (bal3-add-carrying (cons (car y) yr) xr x (cdr y) cs)) ))
     ; x has more-significant digits that we need to stack up before adding
-    ( t (bal3-add-carrying yr (cons (car x) xr) (cdr x) y cs)) )))
+    ( t (bal3-add-carrying yr (cons (car x) xr) (cdr x) y cs)) ))))
 
 
-(label dec-add-carrying (lambda (yr xr x y cs) (cond
+(dec-add-carrying (label dec-add-carrying (lambda (yr xr x y cs) (cond
     ((null (cdr x)) (cond       ; scanned to last digit of x: ready to add?
         ((null (cdr y)) (cond   ; scanned to last digit of y: ready to add.
             ((null yr) (cond    ; y's stack is empty
@@ -349,22 +349,22 @@
         ; y has more-significant digits that we need to stack up before adding
         ( t (dec-add-carrying (cons (car y) yr) xr x (cdr y) cs)) ))
     ; x has more-significant digits that we need to stack up before adding
-    ( t (dec-add-carrying yr (cons (car x) xr) (cdr x) y cs)) )))
+    ( t (dec-add-carrying yr (cons (car x) xr) (cdr x) y cs)) ))))
 
 
 ; Add without removing leading zeroes from sum
-(label bal3-add-denorm (lambda (x y)
+(bal3-add-denorm (lambda (x y)
     (bal3-add-carrying () () x y '(0)) ))
 
 
-(label dec-add-denorm (lambda (x y) (dec-add-carrying () () x y '(0)) ))
+(dec-add-denorm (lambda (x y) (dec-add-carrying () () x y '(0)) ))
 
 
-(label bal3-add (lambda (x y)
+(bal3-add (lambda (x y)
     (cdr-while-car-eq '0 (bal3-add-denorm x y)) ))
 
 
-(label dec-add (lambda (x y)
+(dec-add (lambda (x y)
     (cdr-while-car-eq '0 (dec-add-denorm x y)) ))
 
 
@@ -373,13 +373,13 @@
 ; Conveniently, multiplying a balanced ternary number by a trit
 ; gives (+) an identical result, (0) a zero result, or (-) a negated result.
 
-(label trit-mult (lambda (x y) (cond ((eq x '0) '0)
-                                     ((eq y '0) '0)
-                                     ((eq x  y) '+)
-                                     ( t        '-) )))
+(trit-mult (lambda (x y) (cond ((eq x '0) '0)
+                               ((eq y '0) '0)
+                               ((eq x  y) '+)
+                               ( t        '-) )))
 
 
-(label dec-digit-mult (lambda (x y) (assoc y (assoc x '(
+(dec-digit-mult (lambda (x y) (assoc y (assoc x '(
     (0 ((0 (0 0)) (1 (0 0)) (2 (0 0)) (3 (0 0)) (4 (0 0))
         (5 (0 0)) (6 (0 0)) (7 (0 0)) (8 (0 0)) (9 (0 0)) ))
     (1 ((0 (0 0)) (1 (0 1)) (2 (0 2)) (3 (0 3)) (4 (0 4))
@@ -404,14 +404,14 @@
 
 ; params: x: left multiplicand, a bal3
 ;         y: right multiplicand, a trit
-(label bal3-mult-trit (lambda (x y) (cond ((eq y '0) '(0))
-                                          ((eq y '+)   x)
-                                          ( t         (bal3-neg x)) )))
+(bal3-mult-trit (lambda (x y) (cond ((eq y '0) '(0))
+                                    ((eq y '+)   x)
+                                    ( t         (bal3-neg x)) )))
 
 
 ; Balanced-ternary multiplication
 
-(label bal3-mult (lambda (m n) ( bal3-mult-tritwise () m n '((0) ()) )))
+(bal3-mult (lambda (m n) ( bal3-mult-tritwise () m n '((0) ()) )))
 
 
 ; The following state machine could be factored and optimized.
@@ -421,7 +421,7 @@
 ;          n: lower digits of right multiplicand
 ;         cp: car: digits carried from sum of previous digit products
 ;            cadr: digits completed from sum of previous digit products
-(label bal3-mult-tritwise (lambda (nr m n cp) (cond
+(bal3-mult-tritwise (label bal3-mult-tritwise (lambda (nr m n cp) (cond
     ((null (cdr n)) (cond
         ((null nr) (append
             (bal3-add (car cp) (bal3-mult-trit m (car n)))
@@ -433,7 +433,7 @@
     ( t            (bal3-mult-tritwise (cons (car n) nr)  ; stack digits of n
                                         m
                                        (cdr n)
-                                        cp)) )))
+                                        cp)) ))))
 
 
 ; params:  m: left multiplicand, a bal3
@@ -444,7 +444,7 @@
 ; return:     car: digits carried from sum of digit products with carry
 ;            cadr: digits completed from sum of digit products
 
-(label bal3-mult-trit-regroup (lambda (pc1 cp0) (list
+(bal3-mult-trit-regroup (lambda (pc1 cp0) (list
     (cdr pc1)  ; carry "c1" to add with next bal3*trit product
     (cons (car pc1) (cadr cp0)) )))  ; prefix "p" to output digits "p0"
 
@@ -456,7 +456,7 @@
 ;                  a list of trit (difference from a bal3: can be empty)
 ; return:     car: digits carried from sum of digit products with carry
 ;            cadr: digits completed from sum of digit products
-(label bal3-mult-trit-acc (lambda (m n cp0) (bal3-mult-trit-regroup
+(bal3-mult-trit-acc (lambda (m n cp0) (bal3-mult-trit-regroup
     (rotate-right (bal3-add-denorm (bal3-mult-trit m n) (car cp0)))
      cp0)))
 
@@ -465,7 +465,7 @@
 ; No implementation yet.
 
 ; The predecessor function for unsigned arbitrary-precision binary numbers.
-(label bin-pred (lambda (x) (cond
+(bin-pred (lambda (x) (cond
     ((eq x '(())) '(()))  ; +0; - +1; := +0; because we can't go lower.
     ((eq x '( t)) '(()))  ; The exception to the rule of no leading zeroes.
     ( t            (
@@ -500,7 +500,7 @@
 ;                              v low:cons    v low:cons
 ;    () -> sum ----------------*-------------*----------> x+y
 
-(label bin-add-denorm (lambda (x y)
+(bin-add-denorm (lambda (x y)
     (  (label bin-add-carrying (lambda (yr xr carry sum) (cond
             ((null  yr) (cond
                 ((null xr) (cons carry sum))
@@ -523,7 +523,7 @@
         (reverse y) (reverse x) () () ) ))
 
 
-(label bin-add (lambda (x y)
+(bin-add (lambda (x y)
     (cdr-while-car-eq () (bin-add-denorm x y)) ))
 
 
@@ -532,11 +532,11 @@
 ; It is not needed in binary arithmetic routines.
 
 
-(label bin-mult-bit (lambda (x y) (cond ((eq y ()) '(()))
-                                        ( t           x ) )))
+(bin-mult-bit (lambda (x y) (cond ((eq y ()) '(()))
+                                  ( t           x ) )))
 
 
-(label bin-mult (lambda (m n) (
+(bin-mult (lambda (m n) (
     (label bin-mult-bitwise (lambda (nr carry-product) (cond
         (   (null   (cdr nr))
             (append (bin-add (car carry-product) (bin-mult-bit m (car nr)))

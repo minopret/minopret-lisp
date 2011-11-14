@@ -1,4 +1,4 @@
-(label fact-bal3 (lambda (n) (cond
+(fact-bal3 (lambda (n) (cond
     ((eq (car n) '-) '(+))  ; just return 1 for negative n
     ((equal n '(0)) '(+))
     ( t              (
@@ -8,7 +8,7 @@
                                         (bal3-mult k fact-bal3-n-k) )) )))
          n '(+) )) )))
 
-(label fact-bin (lambda (n) (cond
+(fact-bin (lambda (n) (cond
     ((equal n '(())) '( t))
     ( t               (
         (label fact-bin-n (lambda (k fact-bin-n-k) (cond

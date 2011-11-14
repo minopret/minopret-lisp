@@ -1,4 +1,4 @@
-(label fib-bal3 (lambda (n) (cond
+(fib-bal3 (lambda (n) (cond
     ((eq (car n) '-) '(0))  ; just return zero for negative n
     ((equal n '(0)) '(0))
     ( t              (
@@ -10,7 +10,7 @@
          n '(0) '(+) )) )))
 
 
-(label fib-bin (lambda (n) (cond
+(fib-bin (lambda (n) (cond
     ((equal n '(())) '(()))
     ( t              (
         (label fib-bin-n (lambda (k fibn-k fibn-k+1) (cond
