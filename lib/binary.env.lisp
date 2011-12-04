@@ -251,56 +251,76 @@
         (cons (list y z) ()) )) )))
 
 
+; params: x, a list of US-ASCII characters using quoted-printable encoding
+; return: the list of hexadecimal digits that encode the same
+;         US-ASCII characters as x encodes
 (quoted-printable->hex (lambda (x) (
 
-    ; Push back any deferred tokens and check for termination.
+    ; Recursively push back any deferred tokens, convert one character or one
+    ; three-character quoted-printable sequence, and check for termination.
+    ;
+    ; params: pushback, a list of 0-2 characters that have been scanned
+    ;                   but not yet converted
+    ;         w, a list of US-ASCII characters using quoted-printable encoding
+    ;            that have not been scanned
+    ; return: the list of hexadecimal digits that encode the same
+    ;         US-ASCII characters as the pushback and w characters encode
     (label qp->hex-rec (lambda (pushback w) (
 
+        ; params: f1, function to remove any trailing nils
+        ;             from the pushback list p := caddr hhp.
+        ; return: the list of hexadecimal digits that encode
+        ;         the same US-ASCII characters as w
         (lambda (f1) (cond
-            ((null pushback) (cond
+            ((null pushback) (cond  ; Case: no characters pushed back
                 ((null w) ())
-                ((null (cdr w)) (f1 (quoted-printable->hex^2*pushback
-                    (car w) () () ) () ))
-                ((null (cddr w)) (f1 (quoted-printable->hex^2*pushback
-                    (car w) (cadr w) () ) () ))
-                ( t (f1 (quoted-printable->hex^2*pushback
-                    (car w) (cadr w) (caddr w) ) (cdddr w) )) ))
-            ((null (cdr pushback)) (cond
-                ((null w) (f1 (quoted-printable->hex^2*pushback
-                    (car pushback) () () ) () ))
-                ((null (cdr w)) (f1 (quoted-printable->hex^2*pushback
-                    (car pushback) (car w) () ) () ))
-                ( t (f1 (quoted-printable->hex^2*pushback
-                    (car pushback) (car w) (cadr w) ) (cddr w) )) ))
-            ((null w) (f1 (quoted-printable->hex^2*pushback
-                (car pushback) (cadr pushback) () ) () ))
-            ( t (f1 (quoted-printable->hex^2*pushback
-            (car pushback) (cadr pushback) (car w) ) (cdr w) )) ))
+                ((null (cdr w))         (f1 (quoted-printable->hex^2*pushback
+                    (car w)         ()              () )        () ))
+                ((null (cddr w))        (f1 (quoted-printable->hex^2*pushback
+                    (car w)         (cadr w)        () )        () ))
+                ( t                     (f1 (quoted-printable->hex^2*pushback
+                    (car w)         (cadr w)        (caddr w) ) (cdddr w) )) ))
+            ((null (cdr pushback)) (cond  ; Case: one character pushed back
+                ((null w)               (f1 (quoted-printable->hex^2*pushback
+                    (car pushback)  ()              () )        () ))
+                ((null (cdr w))         (f1 (quoted-printable->hex^2*pushback
+                    (car pushback) (car w)          () )        () ))
+                ( t                     (f1 (quoted-printable->hex^2*pushback
+                    (car pushback) (car w)          (cadr w) )  (cddr w) )) ))
+                                          ; Case: two final characters pushed back
+            ((null w)                   (f1 (quoted-printable->hex^2*pushback
+                    (car pushback) (cadr pushback)  () )        () ))
+                                          ; Case: two non-final characters pushed back
+            ( t                         (f1 (quoted-printable->hex^2*pushback
+                    (car pushback) (cadr pushback)  (car w) )   (cdr w) )) ))
 
-        ; Remove any trailing nils from the pushback list p := caddr hhp.
-        (lambda (hhp w) (
+        ; f1: Remove any trailing nils from the pushback list p := caddr hhp.
+       '(lambda (hhp w) (
 
             (lambda (f2) (cond
-                ; Case len(p) = 0
-                ((null (caddr hhp)) (f2 (car hhp) (cadr hhp) () w))
-                ((null (cdr (caddr hhp))) (cond  ; Case len(p) = 1
+                ((null (caddr hhp)) (f2             ; Case len(p) = 0
+                        (car hhp) (cadr hhp) () w ))
+                ((null (cdr (caddr hhp))) (cond     ; Case len(p) = 1
                     ; Subcase p[0] = nil
-                    ((null (car (caddr hhp))) (f2 (car hhp) (cadr hhp) () w))  
+                    ((null (car (caddr hhp))) (f2
+                        (car hhp) (cadr hhp) () w ))
                     ; Subcase p[0] <> nil
-                    ( t (f2 (car hhp) (cadr hhp) (cons (car (caddr hhp))
-                                                       ()) w )) ))
-                ((null (cddr (caddr hhp))) (cond  ; Case len(p) = 2
+                    ( t (f2
+                        (car hhp) (cadr hhp) (cons (car (caddr hhp)) ()) w )) ))
+                ((null (cddr (caddr hhp))) (cond    ; Case len(p) = 2
                     ; Subcase p[0] = nil. Infer that also p[1] = nil.
-                    ((null (car (caddr hhp))) (f2 (car hhp) (cadr hhp) () w))
+                    ((null (car (caddr hhp))) (f2
+                        (car hhp) (cadr hhp) () w ))
                     ; Subcase p[0] <> nil /\ p[1] = nil.
-                    ((null (cadr (caddr hhp)))
-                     (f2 (car hhp) (cadr hhp) (cons (car (caddr hhp)) ()) w ))
+                    ((null (cadr (caddr hhp))) (f2
+                        (car hhp) (cadr hhp) (cons (car (caddr hhp)) ()) w ))
                     ; Subcase p[0] <> nil /\ p[1] <> nil.
-                    ( t (f2 (car hhp) (cadr hhp) (caddr hhp) w)) )) ))
+                    ( t (f2
+                        (car hhp) (cadr hhp) (caddr hhp) w)) )) ))
 
-; Take a step, assuming that h1 and h2 are two hex digits; p is a list of 0-2
+; f2: Take a step, assuming that h1 and h2 are two hex digits; p is a list of 0-2
 ; pushed-back ASCII printables; and w is a non-empty list of ASCII printables.
-            (lambda (h1 h2 p w) (append (list h1 h2) (qp->hex-rec p w))) )) )))
+           '(lambda (h1 h2 p w) (append (list h1 h2) (qp->hex-rec p w))) )) )))
 ; End of qp->hex-rec
 
     () x ))) ; End of quoted-printable->hex

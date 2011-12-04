@@ -87,7 +87,7 @@ def main():
 
     env_pairs_string = ''
     for m in args.modules:
-        f = open(str(m) + '.lisp')
+        f = open(str(m) + '.env.lisp')
         env_pairs_string += f.read()
         f.close()
     if len(env_pairs_string) > 0:

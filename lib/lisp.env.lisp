@@ -51,6 +51,7 @@
              x (car a) ) )) ))))
 
 
+; Not yet tested.
 ; a: list of assoc lists, most recent first
 ;(label eval     (lambda (x a) (cond
     ;((atom x) (
@@ -58,17 +59,22 @@
         ;   ((null (car alist-value))    x)
         ;   ( t                         (cadr alist-value)) ))
         ;(env-assoc x a) ))
-    ;((eq (car x) 'quote) (cadr x))
-    ;((eq (car x) 'cond) (
-        ;(lambda (pairs) (cond
-            ;((null pairs) ())  ; standard?
-            ;((eval (car pairs) a)
-                ;(eval (cadar pairs) a))  ; proper tail call
-            ;( t
-                ;(eval (cons 'cond (cdr pairs)) a))  ; proper tail call
-        ;))
-        ;(cdr x) ))
-    ;((eq (car x) 'label) (
+    ;((atom (car x)) (
+        ;((eq (car x) 'quote) (cadr x))
+        ;((eq (car x) 'cond) (
+            ;(lambda (pairs) (cond
+                ;((null pairs) ())  ; standard?
+                ;((eval (car pairs) a)
+                    ;(eval (cadar pairs) a))
+                ;( t
+                    ;(eval (cons 'cond (cdr pairs)) a))
+            ;))
+            ;(cdr x) ))
+        ;((quote t) (eval (cons (assoc (car x) a) (cdr x)) a)) ))
+    ;((eq (caar x) 'lambda)
+    ; (eval (caddar x) (append (pair (cadar x) (evlis (cdr x) a)) a)) )
+    ;((eq (caar x) 'label)
+    ; (eval (cons (caddar x) (cdr x)) (cons (list (cadar x) (car x)) a)) ) )))
 
 
 (list           (lambda (x y) (cons x (cons y ()))))
