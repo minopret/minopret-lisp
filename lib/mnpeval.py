@@ -1,5 +1,7 @@
 # -*- encoding: utf8 -*-
-# mnpeval.py # A language much like Lisp I
+# mnpeval.py
+#
+# A language much like Lisp I
 #   <http://www-formal.stanford.edu/jmc/recursive.html>
 # as interpreted by Paul Graham,
 #   <http://www.paulgraham.com/rootsoflisp.html>
@@ -29,7 +31,7 @@
 # - On the other hand it might be nice if the Python
 #   code is very parallel to Lisp-in-Lisp as for example
 #   Paul Graham's, so that perhaps I could
-#   take a Lisp-in-Lisp as the reference implmentation
+#   take a Lisp-in-Lisp as the reference implementation
 #   and translate or generate that to Python,
 #   JavaScript, etc. - particularly when I want
 #   to change the implementation!
@@ -81,6 +83,11 @@ class Env(dict):
             return None
 
     def str_helper(self, rec=False):
+        if self.outer == None:
+            return 'env_top'
+        elif self.outer.outer == None:
+            return 'env_lib'
+
         if rec == False:
             s = '('
         else:
@@ -142,21 +149,32 @@ env0 = mk_builtins(Env())
 
 
 def trace_result(depth, exp):
-    print ('│' * depth) + '└  Result:  ' + str(exp) + '.'
+    pass  # print ('│' * depth) + '└  Result:  ' + str(exp) + '.'
 
 
-def trace_evaluate(depth):
-    print ('│' * (depth-1)) + ('├' if depth > 0 else '') + '┐ Evaluate ',
+def trace_evaluate_or_restate(header, x, env):
+    if not boolean(atom_(x)) and (
+            car_(x) not in ['quote', 'atom', 'car', 'cdr'] ):
+        print header,
+        print str(x) + '   IN ENV ' + str(env)  + '.'
+
+
+def trace_evaluate(depth, x, env):
+    trace_evaluate_or_restate( ('│' * (depth-1))
+        + ('├' if depth > 0 else '')
+        + '┐ Evaluate ', x, env )
 
 
 def trace_apply(depth, f, x):
-    print ('│' * depth) + '├    Apply   ' + f + ' to ' + str(x) + '.'
+    pass  # print ('│' * depth) + '├    Apply   ' + f + ' to ' + str(x) + '.'
 
 
-def trace_restate(depth):
-    print ('│' * depth) + '╞  Restate:',
+def trace_restate(depth, x, env):
+    trace_evaluate_or_restate( ('│' * (depth))
+        + '╞  Restate:', x, env )
 
 
+# Used externally to this package.
 def eval_adding_alist(x, env=env0, alist=None, depth=0):
     env1 = Env(params=None, args=None, outer=env, alist=alist)
     return eval_(x, env1, depth)
@@ -168,17 +186,16 @@ def eval_(x, env=env0, depth=0):
 
     if trace:
         is_tail_call = False
-        trace_evaluate(depth)
 
     while True:  # Be ready to reprocess any proper tail calls.
         if trace:
             if is_tail_call:
-                trace_restate(depth)
-            is_tail_call = True
-            print str(x) + ' in env ' + str(env)  + '.'
-            #print str(x) + '.'
+                trace_restate(depth, x, env)
+            else:
+                trace_evaluate(depth, x, env)
+                is_tail_call = True
 
-        if isinstance(x, Symbol) or x == Expr():  # (atom x)
+        if boolean(atom_(x)):
             e = env.find(x)
             exp = (e[x] if e != None else x)
             if trace:
@@ -216,42 +233,16 @@ def eval_(x, env=env0, depth=0):
             env = Env((label,), (x[0],), env)
             x = Expr([value] + list(x[1:]))
 
-        # Actually Paul Graham writes 'label' in Common Lisp as:
-        #((eq (caar e) 'label)
-        #     (eval. (cons (caddar e) (cdr e))
-        #            (cons (list. (cadar e) (car e)) a)))
-        #
-        # The effect is to rewrite one eval as another:
-        #
         # eval @
-        #   e: ((label theLabelName theDef) someArguments)
+        #   x: ((label theLabelName theDef) someArguments)
         #   a: (someEnvironmentPairs)
         # =>
         # eval @
-        #   e: (theDef someArguments)
+        #   x: (theDef someArguments)
         #   a: (
         #       (theLabelName (label theLabelName theDef))
         #       someEnvironmentPairs
         #      )
-        #
-        # Defined this way, "label" can really only be used in
-        # a couple of ways:
-        #  * If we apply a "label"-headed list to arguments,
-        #    we apply the recursive function so defined
-        #    to those arguments--and then the function is out of scope.
-        #  * If we specify a "label"-headed list as the value of
-        #    a key-value pair in the a-list argument to "eval",
-        #    then we can use the corresponding key wherever we could
-        #    wish to use the recursive function, and "eval"
-        #    will get around to this case. Note that the key
-        #    need NOT be the same as the label name. That is
-        #    why the label name must be added to the environment
-        #    when evaluating the body of the recursive function.
-        #
-        #    So, every non-trivial program in the Lisp that relies
-        #    on "label" to bind recursive functions MUST place
-        #    recursive function definitions into the a-list
-        #    of an "eval" call.
 
         elif x[0][0] == 'lambda':
             params = x[0][1]
@@ -261,12 +252,6 @@ def eval_(x, env=env0, depth=0):
             env = Env(params, args, env)
             x = Expr(body)
 
-        # Actually Paul Graham writes 'lambda' in Common Lisp as:
-        #((eq (caar e) 'lambda)
-        #     (eval. (caddar e)
-        #            (append. (pair. (cadar e) (evlis. (cdr e) a))
-        #                             a)))
-        # which implements the following rewrite:
         # eval @
         #   x: ((lambda params body) args)
         #   a: (someEnvironmentPairs)
@@ -274,7 +259,6 @@ def eval_(x, env=env0, depth=0):
         # eval @
         #   x:  body
         #   a: (append (pair params args) someEnvironmentPairs)
-        
         
         elif x[0] == 'quit':
             exit()
