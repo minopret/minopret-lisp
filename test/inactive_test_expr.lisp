@@ -27,8 +27,7 @@
     ((null (cdr y))  y)  ; in my uses I want at least one element
     ((eq x (car y)) (cdr-while-car-eq x (cdr y)))
     ( t              y) ))))
-
-)
+))
 
 ; Where I want more compactness I could use this balanced base-81 encoding
 ; into printable characters of ASCII (equivalently, UTF-8 Basic Latin block):
