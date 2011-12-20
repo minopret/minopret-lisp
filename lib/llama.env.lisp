@@ -1,4 +1,4 @@
-; llama1
+; llama
 ;
 ; A lambda calculus.
 ; Based on Scheme code that differs primarily by using
