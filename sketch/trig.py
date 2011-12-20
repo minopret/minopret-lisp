@@ -27,8 +27,9 @@
 # (or ultimately perhaps, any nonzero error bound that a user may request).
 
 
-# An effective way to build division on multiplication and subtraction:
-# Reciprocal of any number q >= 1 by Newton's method on this function:
+# An effective way to build (inexact) division on multiplication and
+# subtraction: Reciprocal of any number q >= 1 by Newton's method on
+# this function:
 #     f(x)  =  1/x - q.
 #
 # The crucial characteristics of this f:
@@ -43,6 +44,13 @@
 # values extremely frequently.
 _reciprocals = {0: 1}
 
+# Because currently I take an interest in positional number systems
+# other than binary, and because I want it to be clear which
+# multiplies and divides are implementable as digit shifts,
+# I'll abstract out the number base. The code assumes that the
+# number base is a positive integer greater than 1.
+RADIX = 2
+
 def reciprocal(q):
     global _reciprocals
     if q in _reciprocals:
@@ -51,8 +59,8 @@ def reciprocal(q):
     # Here is a sloppy but quick (unless perhaps q is super-astronomical)
     # starting guess that is definitely between the actual value and zero.
     # I could check my guess that this keeps Newton's method from diverging.
-    a = 2
-    b = 0.5
+    a = RADIX
+    b = 1.0/RADIX
     while q > a:
         a *= a
         b *= b
@@ -88,13 +96,16 @@ def power(x, i):
     product = 1
     factor = x
     while True:
-        if i % 2 == 1:
-            product *= factor
+        if i % RADIX != 0:
+            product *= factor  # needs a little more adjustment to be radix-independent
         if i <= 0:
             break
         #print i, i // 2, i % 2, factor, product
-        factor *= factor
-        i //= 2
+        j = 1
+        while j < RADIX:
+            factor *= factor
+            j += 1
+        i //= RADIX
     return product
 
 
