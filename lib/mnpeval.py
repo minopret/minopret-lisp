@@ -93,7 +93,7 @@ class Env(dict):
         else:
             s = ";\n"
         for x in self:
-            s += '(' + str(x) + ' ' + str(self[x]) + ') '
+            s += '(' + str(x) + ' ' + str(self[x]) + ')  '
         ## For times when we want to see buckets of env. values.
         #if self.outer != None:
         #    s += self.outer.str_helper(rec=True)
