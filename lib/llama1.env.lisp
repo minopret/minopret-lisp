@@ -135,7 +135,7 @@
 (make-ref   (lambda (v) (make-exp 'ref (cons v ()))))
 (ref-v      (lambda (ref) (car (exp-data ref))))
 
-(make-lambda    (lambda (v body) (make-exp 'lambda (list v body))))
+(make-lambda    (lambda (v body) (make-exp 'llama (list v body))))
 (lambda-v       (lambda (lam) (car  (exp-data lam))))
 (lambda-body    (lambda (lam) (cadr (exp-data lam))))
 
@@ -145,7 +145,7 @@
 
 (exp->valexp    (lambda (exp) (cond
     ((eq (exp-typename exp) 'ref)       (make-vexp exp))
-    ((eq (exp-typename exp) 'lambda)    (make-vexp exp))
+    ((eq (exp-typename exp) 'llama)    (make-vexp exp))
     ( t                                 (make-vapp  ; (eq (exp-typename exp) 'app)
         (exp->valexp (app-f exp))
         (exp->valexp (app-e exp)) )) )))
@@ -167,13 +167,13 @@
                 (state-env s) (state-cont s) ) )
 
         ; close over a lambda term
-        ((eq (exp-typename exp) 'lambda)
+        ((eq (exp-typename exp) 'llama)
             (make-state (make-den (make-clo exp (state-env s)))
                 (state-env s) (state-cont s) ) )
 
         ; eq (exp-typename exp) 'app
         (t 'interpreter-error) ))  
-    (vexp-exp (valexp-nextexp valexp)) )))
+    (vexp-exp vexp) )))
 
 (vapp-next (lambda (vapp s) (cond
     ; apply a function
