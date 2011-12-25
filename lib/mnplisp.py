@@ -94,6 +94,7 @@ def main():
         env_pairs_string = "(\n" + env_pairs_string + "\n)\n"
 
     if args.input == 'interactive':
+        import readline
         read_eval_print_loop(env_pairs_string)
     else:
         read_eval_print(env_pairs_string)
