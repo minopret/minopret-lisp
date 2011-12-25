@@ -94,21 +94,26 @@
 (make-vapp (lambda (f e) (append
     (make-valexp
         'vapp
-       '(lambda (d) (
-            (lambda (f-try) (cond (
-                ((eq f-try 'bad-insertion)
-                    (make-vapp f ((valexp-insert e) d)) )
-                ( t
-                     f-try ) ) ))
-            (make-vapp ((valexp-insert f) d) e) ))
-       '(
-            (lambda (f-try) (cond (
-                ((eq f-try 'no-next-expressions)
-                    (valexp-nextexp e) )
-                ( t
-                     f-try ) )))
-            (valexp-nextexp f) ) )
+        (make-vapp-insert f e)
+        (make-vapp-nextexp f e) )
     (list f e) )))
+; A good example of what quasiquote is for. But I don't have it.
+(make-vapp-insert (lambda (f e) (list 'quote
+    (cons 'lambda (list '(d) (list
+        (cons 'lambda (list '(f-try) (cons 'cond (list
+            (list '(eq f-try 'bad-insertion)
+                (cons 'make-vapp (list f (list (list 'valexp-insert e) 'd))) )
+            (list t
+                (cons 'make-vapp (list 'f-try e)) ) ))))
+        (list (list 'valexp-insert f) 'd) ))) )))
+; Another good example of what quasiquote is for. But I still don't have it.
+(make-vapp-nextexp (lambda (f e) (list 'quote (list
+    (cons 'lambda (list '(f-try) (cons 'cond (list
+        (list '(eq f-try 'no-next-expressions)
+            (list 'valexp-nextexp e) )
+       '( t
+             f-try ) ))))
+    (list 'valexp-nextexp f) ))))
 (vapp-f (lambda (vapp) (cadddr vapp)))
 (vapp-e (lambda (vapp) (car (cddddr vapp))))
 
@@ -119,7 +124,7 @@
 ; Example: references, which evaluate via environment lookup.
 (make-vexp (lambda (exp) (make-valexp
     'vexp
-    'make-den
+     make-den
      exp )))
 (vexp-exp  (lambda (vexp) (valexp-nextexp vexp)))
 
@@ -143,23 +148,23 @@
 (app-f      (lambda (app) (car  (exp-data app))))
 (app-e      (lambda (app) (cadr (exp-data app))))
 
-(exp->valexp    (lambda (exp) (cond
+(exp->valexp    (lambda (exp) (trace (cond
     ((eq (exp-typename exp) 'ref)       (make-vexp exp))
-    ((eq (exp-typename exp) 'llama)    (make-vexp exp))
+    ((eq (exp-typename exp) 'llama)     (make-vexp exp))
     ( t                                 (make-vapp  ; (eq (exp-typename exp) 'app)
         (exp->valexp (app-f exp))
-        (exp->valexp (app-e exp)) )) )))
+        (exp->valexp (app-e exp)) )) ))))
 
 
 ; State transition function.
-(next   (lambda (s) (
+(next   (lambda (s) (trace (
     (lambda (valexp) (cond
         ((eq (valexp-typename valexp) 'vexp) (vexp-next valexp s))
         ((eq (valexp-typename valexp) 'vapp) (vapp-next valexp s))
         ((eq (valexp-typename valexp) 'den)  (den-next  valexp s)) ))
-    (state-valexp s) )))
+    (state-valexp s) ))))
 
-(vexp-next (lambda (vexp s) (
+(vexp-next (lambda (vexp s) (trace (
     (lambda (exp) (cond
         ; look up a variable
         ((eq (exp-typename exp) 'ref)
@@ -172,10 +177,10 @@
                 (state-env s) (state-cont s) ) )
 
         ; eq (exp-typename exp) 'app
-        (t 'interpreter-error) ))  
-    (vexp-exp vexp) )))
+        (t 'interpreter-error) ))
+    (vexp-exp vexp) ))))
 
-(vapp-next (lambda (vapp s) (cond
+(vapp-next (lambda (vapp s) (trace (cond
     ; apply a function
     ((and (eq (valexp-typename (vapp-f vapp)) 'den)
           (eq (valexp-typename (vapp-e vapp)) 'den))
@@ -194,24 +199,24 @@
                  (state-env s)
                  (make-retcont (lambda (clo) (valexp-insert (state-valexp s) clo))
                                (state-env s)
-                               (state-cont s) ) ) ) )))
+                               (state-cont s) ) ) ) ))))
 
 ; return to the current continuation
-(den-next (lambda (den s) (
+(den-next (lambda (den s) (trace (
     (lambda (c) (cond
         ((eq (cont-typename c) 'retcont)
          (make-state ((retcont-context c) (den-d den))
                       (retcont-env     c)
                       (retcont-cont    c) ) )
         ( t (list 'halted (den-d den))) ))  ; (cont-typename c 'haltcont)
-    (state-cont s) )))
+    (state-cont s) ))))
 
 
-(interpret (lambda (exp) (
+(interpret (lambda (exp) (trace (
     (label try-next (lambda (s) (
         (lambda (s-try) (cond
             ((eq (car s-try) 'halted) (cadr s-try))
             ( t (try-next s-try)) ))
         (next s) )))
-    (make-state (exp->valexp exp) () haltcont) )))
+    (make-state (exp->valexp exp) () haltcont) ))))
 
