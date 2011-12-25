@@ -21,7 +21,7 @@
 ; Standard: none. Roughly similar functionality to lisp-unit.
 (assert-equal   (lambda (x y) (cond
     ((equal x y) t)
-    (         t (append (list 'Expecting y) (list 'found x))) )))
+    (         t (cons 'Expecting (cons y (list 'found x)))) )))
 
 
 ; Some day this and assoc could benefit from using a self-balancing tree,
