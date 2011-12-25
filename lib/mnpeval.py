@@ -73,9 +73,7 @@ class Env(dict):
         self.outer = outer
 
     def find(self, x):
-        if x == Expr():
-            return None
-        elif x in self:
+        if x in self:
             return self
         elif self.outer != None:
             return self.outer.find(x)
@@ -136,6 +134,7 @@ def mk_builtins(env):
         'cons': cons_,
         'eq': eq_,
         # quote     # special form implemented in eval_
+        't': Symbol('t'),
     })
     return env
 
@@ -195,9 +194,15 @@ def eval_(x, env=env0, depth=0):
                 trace_evaluate(depth, x, env)
                 is_tail_call = True
 
-        if boolean(atom_(x)):
+        if x == Expr():
+            return Expr()  # Special case () ==> ()
+
+        elif boolean(atom_(x)):
             e = env.find(x)
-            exp = (e[x] if e != None else x)
+            if e != None:
+                exp = e[x]
+            else:
+                raise ValueError
             if trace:
                 trace_result(depth, exp)
             return exp
@@ -211,7 +216,7 @@ def eval_(x, env=env0, depth=0):
         elif x[0] == 'trace':
             exp = x[1]
             val = eval_(exp, env, depth + 1)  # near-miss tail call
-            print 'Trace ' + str(exp) + ': ' + str(val) + '.'
+            print 'Trace ' + str(exp) + ":\n " + str(val) + '.'
             return val
 
         elif x[0] == 'cond':

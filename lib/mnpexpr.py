@@ -45,7 +45,9 @@ class Expr(tuple):
                 if p > 0:
                     break
             i += s[0:p].count('(') - s[0:p].count(')')
-            t += s[0:p] + "\n" + (' ' * i)
+            t += s[0:p]
+            if p < len(s):
+                t += "\n" + (' ' * i)
             s = s[p:]
         return t
 
