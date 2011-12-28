@@ -34,10 +34,10 @@
 
 
 ; State, a partially evaluated value expression.
-(make-state (lambda (valexp env cont) (cons valexp (list env cont))))
-(state-valexp   (lambda (state) (car    state)))
-(state-env      (lambda (state) (cadr   state)))
-(state-cont     (lambda (state) (caddr  state)))
+(make-state (lambda (valexp env cont) (cons valexp (list env cont))))  ; ok
+(state-valexp   (lambda (state) (car    state)))  ; ok
+(state-env      (lambda (state) (cadr   state)))  ; ok
+(state-cont     (lambda (state) (caddr  state)))  ; ok
 
 
 ; An env is an a-list associating variables to denotable values.
@@ -45,38 +45,38 @@
 
 ; One type of denotable value (the only one here) is a closure.
 ; This interpreter could be exhanced to allow also strings, numbers, etc.
-(make-clo   (lambda (lam env) (list lam env)))
-(clo-lambda (lambda (clo) (car  clo)))
-(clo-env    (lambda (clo) (cadr clo)))
+(make-clo   (lambda (lam env) (list lam env)))  ; ok
+(clo-lambda (lambda (clo) (car  clo)))  ; ok
+(clo-env    (lambda (clo) (cadr clo)))  ; ok
 
 
 ; continuations of various types
-(make-cont (lambda (typename data) (cons typename data)))
-(cont-typename  (lambda (cont) (car cont)))
-(cont-data      (lambda (cont) (cdr cont)))
+(make-cont (lambda (typename data) (cons typename data)))  ; ok
+(cont-typename  (lambda (cont) (car cont)))  ; ok
+(cont-data      (lambda (cont) (cdr cont)))  ; ok
 
 
 ; RetCont, a continuation that takes a return value and produces
 ; a new value expression.
 (make-retcont (lambda (context env cont)
-    (make-cont 'retcont (cons context (list env cont))) ))
-(retcont-context    (lambda (retcont) (car      (cont-data retcont))))
-(retcont-env        (lambda (retcont) (cadr     (cont-data retcont))))
-(retcont-cont       (lambda (retcont) (caddr    (cont-data retcont))))
+    (make-cont 'retcont (cons context (list env cont))) ))  ; ok
+(retcont-context    (lambda (retcont) (car      (cont-data retcont))))  ; ok
+(retcont-env        (lambda (retcont) (cadr     (cont-data retcont))))  ; ok
+(retcont-cont       (lambda (retcont) (caddr    (cont-data retcont))))  ; ok
 
 
 ; HaltCont, a continuation object that signals the halting of the program
-(haltcont           (haltcont))
+(haltcont           (haltcont))  ; ok
 
 
 ; ValExp, a partially evaluated expression.
 ; "insert": A function of a denotable value (closure) that places it
 ;    in a copy of this ValExp in place of the ValExp's leftmost unevaluated expression.
 ; "nextexp": The ValExp's leftmost unevaluated expression.
-(make-valexp (lambda (typename insert nextexp) (cons typename (list insert nextexp))))
-(valexp-typename    (lambda (valexp) (car   valexp)))
-(valexp-insert      (lambda (valexp) (cadr  valexp)))
-(valexp-nextexp     (lambda (valexp) (caddr valexp)))
+(make-valexp (lambda (typename insert nextexp) (cons typename (list insert (list 'quote nextexp)))))  ; ok
+(valexp-typename    (lambda (valexp) (car   valexp)))  ; ok
+(valexp-insert      (lambda (valexp) (cadr  valexp)))  ; ok
+(valexp-nextexp     (lambda (valexp) (cadr (caddr valexp))))  ; ok
 
 
 ; Den, a ValExp that is fully evaluated, and must not be evaluated further.
@@ -84,9 +84,9 @@
     (make-valexp
         'den
        '(lambda (d) 'bad-insertion)
-        'no-next-expressions )
-    (cons d ()) )))
-(den-d (lambda (den) (cadddr den)))
+       'no-next-expressions )
+    (cons d ()) )))  ; ok
+(den-d (lambda (den) (cadddr den)))  ; ok
 
 
 ; VApp, a ValExp that is a partially evaluated application
@@ -96,26 +96,38 @@
         'vapp
         (make-vapp-insert f e)
         (make-vapp-nextexp f e) )
-    (list f e) )))
-; A good example of what quasiquote is for. But I don't have it.
-(make-vapp-insert (lambda (f e) (list 'quote
+    (list f e) )))  ; ok
+; A good example of what quasiquote is for. But I don't have it (yet).
+; (make-vapp-insert (lambda (f e)
+;   `(lambda (d) (
+;       (lambda (f-try) (cond
+;           ((eq f-try 'bad-insertion)
+;            (make-vapp (quote ,f) ((valexp-insert (quote ,e)) d)) )
+;           ( t (make-vapp f-try (quote ,e))) ))
+;       ((valexp-insert (quote ,f)) d) )) ))
+(make-vapp-insert (lambda (f e) 
     (cons 'lambda (list '(d) (list
         (cons 'lambda (list '(f-try) (cons 'cond (list
             (list '(eq f-try 'bad-insertion)
-                (cons 'make-vapp (list f (list (list 'valexp-insert e) 'd))) )
+                (cons 'make-vapp (list (list 'quote f) (list (list 'valexp-insert (list 'quote e)) 'd))) )
             (list t
-                (cons 'make-vapp (list 'f-try e)) ) ))))
-        (list (list 'valexp-insert f) 'd) ))) )))
+                (cons 'make-vapp (list 'f-try (list 'quote e))) ) ))))
+        (list (list 'valexp-insert (list 'quote f)) 'd) ))) ))  ; ok
 ; Another good example of what quasiquote is for. But I still don't have it.
-(make-vapp-nextexp (lambda (f e) (list 'quote (list
+; (make-vapp-nextexp (lambda (f e) `(
+;     (lambda (f-try) (cond
+;        ((eq f-try 'no-next-expressions) (valexp-nextexp (quote ,e)))
+;        ( t f-try) ))
+;     (valexp-nextexp (quote ,f)) )))
+(make-vapp-nextexp (lambda (f e) (list
     (cons 'lambda (list '(f-try) (cons 'cond (list
         (list '(eq f-try 'no-next-expressions)
-            (list 'valexp-nextexp e) )
+            (list 'valexp-nextexp (list 'quote e)) )
        '( t
              f-try ) ))))
-    (list 'valexp-nextexp f) ))))
-(vapp-f (lambda (vapp) (cadddr vapp)))
-(vapp-e (lambda (vapp) (car (cddddr vapp))))
+    (list 'valexp-nextexp (list 'quote f)) )))  ; ok
+(vapp-f (lambda (vapp) (cadddr vapp)))  ; ok
+(vapp-e (lambda (vapp) (car (cddddr vapp))))  ; ok
 
 
 ; VExp, a ValExp that cannot be partially evaluated, either because
@@ -125,46 +137,46 @@
 (make-vexp (lambda (exp) (make-valexp
     'vexp
      make-den
-     exp )))
-(vexp-exp  (lambda (vexp) (valexp-nextexp vexp)))
+    (list 'quote exp) )))  ; ok
+(vexp-exp  (lambda (vexp) (valexp-nextexp vexp)))  ; ok
 
 
 ; Exp of various types
 ; Examples:
 ;   '(lambda x (lambda y (ref x)))
 ;   '(lambda s (lambda z (app (ref s) (ref z))))
-(make-exp       (lambda (typename data) (cons typename data)))
-(exp-typename   (lambda (exp) (car exp)))
-(exp-data       (lambda (exp) (cdr exp)))
+(make-exp       (lambda (typename data) (cons typename data)))  ; ok
+(exp-typename   (lambda (exp) (car exp)))  ; ok
+(exp-data       (lambda (exp) (cdr exp)))  ; ok
 
-(make-ref   (lambda (v) (make-exp 'ref (cons v ()))))
-(ref-v      (lambda (ref) (car (exp-data ref))))
+(make-ref   (lambda (v) (make-exp 'ref (cons v ()))))  ; ok
+(ref-v      (lambda (ref) (car (exp-data ref))))  ; ok
 
-(make-lambda    (lambda (v body) (make-exp 'llama (list v body))))
-(lambda-v       (lambda (lam) (car  (exp-data lam))))
-(lambda-body    (lambda (lam) (cadr (exp-data lam))))
+(make-lambda    (lambda (v body) (make-exp 'llama (list v body))))  ; ok
+(lambda-v       (lambda (lam) (car  (exp-data lam))))  ; ok
+(lambda-body    (lambda (lam) (cadr (exp-data lam))))  ; ok
 
-(make-app   (lambda (f e) (make-exp 'app (list f e))))
-(app-f      (lambda (app) (car  (exp-data app))))
-(app-e      (lambda (app) (cadr (exp-data app))))
+(make-app   (lambda (f e) (make-exp 'app (list f e))))  ; ok
+(app-f      (lambda (app) (car  (exp-data app))))  ; ok
+(app-e      (lambda (app) (cadr (exp-data app))))  ; ok
 
-(exp->valexp    (lambda (exp) (trace (cond
+(exp->valexp    (lambda (exp) (cond
     ((eq (exp-typename exp) 'ref)       (make-vexp exp))
     ((eq (exp-typename exp) 'llama)     (make-vexp exp))
     ( t                                 (make-vapp  ; (eq (exp-typename exp) 'app)
         (exp->valexp (app-f exp))
-        (exp->valexp (app-e exp)) )) ))))
+        (exp->valexp (app-e exp)) )) )))  ; ok
 
 
 ; State transition function.
-(next   (lambda (s) (trace (
+(next   (lambda (s) (
     (lambda (valexp) (cond
         ((eq (valexp-typename valexp) 'vexp) (vexp-next valexp s))
         ((eq (valexp-typename valexp) 'vapp) (vapp-next valexp s))
         ((eq (valexp-typename valexp) 'den)  (den-next  valexp s)) ))
-    (state-valexp s) ))))
+    (state-valexp s) )))
 
-(vexp-next (lambda (vexp s) (trace (
+(vexp-next (lambda (vexp s) (
     (lambda (exp) (cond
         ; look up a variable
         ((eq (exp-typename exp) 'ref)
@@ -177,10 +189,10 @@
                 (state-env s) (state-cont s) ) )
 
         ; eq (exp-typename exp) 'app
-        (t 'interpreter-error) ))
-    (vexp-exp vexp) ))))
+        ( t  'interpreter-error) ))
+    (vexp-exp vexp) )))
 
-(vapp-next (lambda (vapp s) (trace (cond
+(vapp-next (lambda (vapp s) (cond
     ; apply a function
     ((and (eq (valexp-typename (vapp-f vapp)) 'den)
           (eq (valexp-typename (vapp-e vapp)) 'den))
@@ -199,24 +211,24 @@
                  (state-env s)
                  (make-retcont (lambda (clo) (valexp-insert (state-valexp s) clo))
                                (state-env s)
-                               (state-cont s) ) ) ) ))))
+                               (state-cont s) ) ) ) )))
 
 ; return to the current continuation
-(den-next (lambda (den s) (trace (
+(den-next (lambda (den s) (
     (lambda (c) (cond
         ((eq (cont-typename c) 'retcont)
-         (make-state ((retcont-context c) (den-d den))
-                      (retcont-env     c)
-                      (retcont-cont    c) ) )
+         (make-state (assoc (den-d den) (retcont-context c))
+                     (retcont-env   c)
+                     (retcont-cont  c) ) )
         ( t (list 'halted (den-d den))) ))  ; (cont-typename c 'haltcont)
-    (state-cont s) ))))
+    (state-cont s) )))
 
 
-(interpret (lambda (exp) (trace (
+(interpret (lambda (exp) (
     (label try-next (lambda (s) (
         (lambda (s-try) (cond
             ((eq (car s-try) 'halted) (cadr s-try))
             ( t (try-next s-try)) ))
         (next s) )))
-    (make-state (exp->valexp exp) () haltcont) ))))
+    (make-state (exp->valexp exp) () haltcont) )))
 
