@@ -63,15 +63,15 @@
 ; Tests of make-vexp and its result.
 (assert-equal (make-vexp 'a) '(vexp (lambda (d) (append
     (make-valexp 'den '(lambda (d) 'bad-insertion) 'no-next-expressions)
-    (cons d ()) )) (quote 'a)) )  ; ok
+    (cons d ()) )) 'a) )  ; ok
 (assert-equal (valexp-typename (make-vexp 'a)) 'vexp)  ; ok
 (assert-equal (valexp-insert (make-vexp 'a))
    '(lambda (d) (append
         (make-valexp 'den '(lambda (d) 'bad-insertion) 'no-next-expressions)
         (cons d ()) )) )  ; ok
 (assert-equal ((valexp-insert (make-vexp 'a)) 'b) (make-den 'b))  ; ok
-(assert-equal (valexp-nextexp (make-vexp 'a)) '(quote a))  ; ok
-(assert-equal (vexp-exp (make-vexp 'a)) '(quote a))  ; ok
+(assert-equal (valexp-nextexp (make-vexp 'a)) 'a)  ; ok
+(assert-equal (vexp-exp (make-vexp 'a)) 'a)  ; ok
 
 ; Tests of make-vapp and its result.
 (assert-equal (make-vapp-insert 'a 'b)
@@ -81,45 +81,71 @@
              (make-vapp 'a ((valexp-insert 'b) d)) )
             ( t (make-vapp f-try 'b)) ))
         ((valexp-insert 'a) d) )) )
-(assert-equal (make-vapp-nextexp 'a 'b) '(
-    (lambda (f-try) (cond
-       ((eq f-try 'no-next-expressions) (valexp-nextexp 'b))
-       ( t f-try) ))
-    (valexp-nextexp 'a) ))
+(assert-equal (make-vapp-nextexp (make-vexp '(ref a)) 'b)
+   '(ref a) )
 '50
-(assert-equal (make-vapp 'a 'b)
+(assert-equal (make-vapp-nextexp (make-den 'a) (make-vexp '(ref b)))
+   '(ref b) )
+(assert-equal (make-vapp-nextexp (make-den 'a) (make-den 'b))
+    'no-next-expressions )
+(assert-equal (make-vapp (make-vexp '(ref a)) 'b)
    '(vapp
         (lambda (d) (
             (lambda (f-try) (cond
                 ((eq f-try 'bad-insertion)
-                 (make-vapp 'a ((valexp-insert 'b) d)) )
-                ( t (make-vapp f-try 'b)) ))
-            ((valexp-insert 'a) d) ))
-        '(
+                 (make-vapp
+                    '(vexp (lambda (d) (append
+                         (make-valexp 'den '(lambda (d) 'bad-insertion) 'no-next-expressions)
+                         (cons d ()) )) '(ref a) )
+                    ((valexp-insert 'b) d) ) )
+                 (t (make-vapp f-try 'b)) ))
+            ( (valexp-insert
+                 '(vexp (lambda (d) (append
+                      (make-valexp 'den '(lambda (d) 'bad-insertion) 'no-next-expressions)
+                      (cons d ()) )) '(ref a) ) )
+               d ) ))
+       '(ref a)
+        (vexp (lambda (d) (append
+            (make-valexp 'den '(lambda (d) 'bad-insertion) 'no-next-expressions)
+            (cons d ()) )) '(ref a) )
+         b ) )
+(assert-equal (make-vapp (make-den 'a) (make-den 'b))
+   '(vapp
+        (lambda (d) (
             (lambda (f-try) (cond
-                ((eq f-try 'no-next-expressions) (valexp-nextexp 'b))
-                ( t f-try) ))
-            (valexp-nextexp 'a) )
-          a b ) )  ; ok
-(assert-equal (make-vapp 'a 'b)
-    (cons 'vapp (append
-        (list (make-vapp-insert 'a 'b) (list 'quote (make-vapp-nextexp 'a 'b)))
-        (list 'a 'b) )) )  ; ok
-(assert-equal (valexp-typename (make-vapp 'a 'b)) 'vapp)  ; ok
-(assert-equal (valexp-insert (make-vapp 'a 'b)) (make-vapp-insert 'a 'b))  ; ok
-(assert-equal ((valexp-insert (make-vapp (exp->valexp '(ref a)) 'b)) 'c)
-    (make-vapp (make-den 'c) 'b) )  ; ok
-(assert-equal ((valexp-insert (make-vapp (make-den 'a) (exp->valexp '(ref b)))) 'c)
-    (make-vapp (make-den 'a) (make-den 'c)) )  ; ok
-(assert-equal (valexp-nextexp (make-vapp 'a 'b)) (make-vapp-nextexp 'a 'b))  ; ok
-(assert-equal (vapp-f (make-vapp 'a 'b)) 'a)  ; ok
-(assert-equal (vapp-e (make-vapp 'a 'b)) 'b)  ; ok
+                ( (eq f-try 'bad-insertion)
+                  (make-vapp
+                     '(den (lambda (d) 'bad-insertion) 'no-next-expressions a)
+                      ( (valexp-insert
+                           '(den (lambda (d) 'bad-insertion) 'no-next-expressions b) )
+                         d ) ) )
+                (  t
+                  (make-vapp
+                       f-try
+                     '(den (lambda (d) 'bad-insertion) 'no-next-expressions b) ) ) ))
+            ( (valexp-insert
+                 '(den (lambda (d) 'bad-insertion) 'no-next-expressions a) )
+             d ) ))
+        'no-next-expressions
+        (den (lambda (d) 'bad-insertion) 'no-next-expressions a)
+        (den (lambda (d) 'bad-insertion) 'no-next-expressions b) ) )
 
-(assert-equal (exp->valexp '(ref a)) (make-vexp '(ref a)))  ; ok
+(assert-equal (valexp-typename (make-vapp (make-den 'a) (make-den 'b))) 'vapp)
+(assert-equal (valexp-insert (make-vapp (make-den 'a) (make-den 'b)))
+    (make-vapp-insert (make-den 'a) (make-den 'b)) )
+'(assert-equal ((valexp-insert (make-vapp (exp->valexp '(ref a)) 'b)) 'c)
+    (make-vapp (make-den 'c) 'b) )
+'(assert-equal ((valexp-insert (make-vapp (make-den 'a) (exp->valexp '(ref b)))) 'c)
+    (make-vapp (make-den 'a) (make-den 'c)) )
+'(assert-equal (valexp-nextexp (make-vapp 'a 'b)) (make-vapp-nextexp 'a 'b))
+(assert-equal (vapp-f (make-vapp 'a 'b)) 'a)
 '60
-(assert-equal (exp->valexp '(llama a (ref a))) (make-vexp '(llama a (ref a))))  ; ok
+(assert-equal (vapp-e (make-vapp 'a 'b)) 'b)
+
+(assert-equal (exp->valexp '(ref a)) (make-vexp '(ref a)))
+(assert-equal (exp->valexp '(llama a (ref a))) (make-vexp '(llama a (ref a))))
 (assert-equal (exp->valexp '(app (ref a) (ref b)))
-    (make-vapp (make-vexp '(ref a)) (make-vexp '(ref b))) )  ; ok
+    (make-vapp (make-vexp '(ref a)) (make-vexp '(ref b))) )
 
 'den-next
 (assert-equal
