@@ -113,19 +113,13 @@
             (list t
                 (cons 'make-vapp (list 'f-try (list 'quote e))) ) ))))
         (list (list 'valexp-insert (list 'quote f)) 'd) ))) ))  ; ok
-; Another good example of what quasiquote is for. But I still don't have it.
-; (make-vapp-nextexp (lambda (f e) `(
-;     (lambda (f-try) (cond
-;        ((eq f-try 'no-next-expressions) (valexp-nextexp (quote ,e)))
-;        ( t f-try) ))
-;     (valexp-nextexp (quote ,f)) )))
-(make-vapp-nextexp (lambda (f e) (list
-    (cons 'lambda (list '(f-try) (cons 'cond (list
-        (list '(eq f-try 'no-next-expressions)
-            (list 'valexp-nextexp (list 'quote e)) )
-       '( t
-             f-try ) ))))
-    (list 'valexp-nextexp (list 'quote f)) )))  ; ok
+(make-vapp-nextexp (lambda (f e) (
+    (lambda (f-try) (cond
+        ((eq f-try 'no-next-expressions)
+         (valexp-nextexp e) )
+        ( t
+             f-try ) ))
+    (valexp-nextexp f) )))
 (vapp-f (lambda (vapp) (cadddr vapp)))  ; ok
 (vapp-e (lambda (vapp) (car (cddddr vapp))))  ; ok
 
@@ -137,7 +131,7 @@
 (make-vexp (lambda (exp) (make-valexp
     'vexp
      make-den
-    (list 'quote exp) )))  ; ok
+     exp )))
 (vexp-exp  (lambda (vexp) (valexp-nextexp vexp)))  ; ok
 
 
