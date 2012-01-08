@@ -153,7 +153,7 @@ def trace_result(depth, exp):
 
 def trace_evaluate_or_restate(header, x, env):
     if not boolean(atom_(x)) and (
-            car_(x) not in ['quote', 'atom', 'car', 'cdr'] ):
+            car_(x) not in "quote atom car cdr cons eq list append".split() ):
         print header,
         print str(x) + '   IN ENV ' + str(env)  + '.'
 
