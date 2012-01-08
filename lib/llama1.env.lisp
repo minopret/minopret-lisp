@@ -190,28 +190,35 @@
 
         ; eq (exp-typename exp) 'app
         ( t  'interpreter-error) ))
-    (vexp-exp vexp) )))
+    (cadr (vexp-exp vexp)) )))
 
 (vapp-next (lambda (vapp s) (cond
     ; apply a function
-    ((and (eq (valexp-typename (vapp-f vapp)) 'den)
-          (eq (valexp-typename (vapp-e vapp)) 'den))
-     (  (lambda (v body env2 darg)
-            (make-state body (cons (list v darg) env2) (state-cont s)) )
-        (lambda-v    (clo-lambda (vapp-f vapp)))
-        (exp->valexp (lambda-body (clo-lambda (vapp-f vapp))))
-        (clo-env (vapp-f vapp))
-        (vapp-e vapp) ) )
 
-    ; evaluate a sub-expression
+    ; Next two cases evaluate a sub-expression
     ;;case VApp(_,_) => 
     ;;  State(s.valexp.nextExp, s.env, RetCont(s.valexp.insert(_), s.env, s.cont))
-    ( t
+    ; where "s.valexp.insert(_)" means the anonymous function
+    ; "x => s.valexp.insert(x)"
+
+    ; If 'a' is not a "denotable":
+    ;; State(VApp(a,b),c,d) ==> State(a,c,RetCont( x => VApp(x,b) ,c,d)
+    ; If 'a' is a "denotable" but 'b' is not:
+    ;; State(VApp(a,b),c,d) ==> State(b,c,RetCont( x => VApp(a,x) ,c,d)
+    ((or (not (eq (valexp-typename (vapp-f vapp)) 'den))
+         (not (eq (valexp-typename (vapp-e vapp)) 'den)) )
      (make-state (exp->valexp (valexp-nextexp (state-valexp s)))
                  (state-env s)
                  (make-retcont (lambda (clo) (valexp-insert (state-valexp s) clo))
                                (state-env s)
-                               (state-cont s) ) ) ) )))
+                               (state-cont s) ) ) )
+    ( t
+     (  (lambda (v body env2 darg)
+            (make-state body (cons (list v darg) env2) (state-cont s)) )
+        (lambda-v    (clo-lambda (den-d (vapp-f vapp))))
+        (exp->valexp (lambda-body (clo-lambda (den-d (vapp-f vapp)))))
+        (clo-env (den-d (vapp-f vapp)))
+        (den-d (vapp-e vapp)) ) ) )))
 
 ; return to the current continuation
 (den-next (lambda (den s) (
@@ -231,4 +238,3 @@
             ( t (try-next s-try)) ))
         (next s) )))
     (make-state (exp->valexp exp) () haltcont) )))
-
