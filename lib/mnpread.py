@@ -28,7 +28,7 @@ def tokenize(s):
     s = sub('\s*;.*', '', s, 0, flags=M)
 
     s = s.replace('(', '( ')
-    s = s.replace(')', ' )')
+    s = s.replace(')', ' ) ')
     return Expr(s.split())
 
 
@@ -44,7 +44,8 @@ def wrinkle(tokens):
     # First token.
     t = tokens[0]
 
-    if t == '(' or t == "'(":
+    if t.endswith('(') and t == "'"*(len(t)-1) + '(':
+        n = len(t) - 1
         p += 1
         r = []
 
@@ -55,8 +56,9 @@ def wrinkle(tokens):
 
         if p < len(tokens):  # and therefore tokens[p] == ')'
             p += 1
-            if t == "'(":
-                r = Expr(('quote', Expr(r), ))
+            if t.startswith("'"):
+                for i in range(0, n):
+                    r = Expr(('quote', Expr(r), ))
         else:
             raise SyntaxError('Missing right paren')
     elif t == ')':
@@ -67,14 +69,20 @@ def wrinkle(tokens):
         # But let's just leave it here.
         raise SyntaxError('Extra right paren')
     else:
-        if t[0] == "'" and len(t) > 1:
-            r = Expr(('quote', t[1:], ))
-        else:
-            r = t
+        n = lcount(t, "'")
+        if 0 < n == len(t):
+            n = n - 1
+        r = t[n:]
+        for i in range(0, n):
+            r = Expr(('quote', r, ))
         p += 1
     if isinstance(r, list):
         r = Expr(r)
     return (r, p)
+
+
+def lcount(s, c=None):
+    return len(s) - len(s.lstrip(c))
 
 
 def read_next_exprs(prompt='Press Ctrl-D on a new line to exit> '):
