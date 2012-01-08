@@ -1,5 +1,3 @@
 #!/bin/sh
-MNPBASE=`dirname $0`/..
-MNPLIB=$MNPBASE/lib
-cd $MNPLIB
-cat ../test/test_label.lisp | python mnplisp.py --script $*
+MNPTEST=`dirname $0`
+cat $MNPTEST/test_label.lisp | $MNPTEST/../bin/mnplisp --script $*
