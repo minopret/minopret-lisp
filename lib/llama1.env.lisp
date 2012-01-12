@@ -84,7 +84,7 @@
     (make-valexp
         'den
        '(lambda (d) 'bad-insertion)
-       'no-next-expressions )
+        'no-next-expressions )
     (cons d ()) )))  ; ok
 (den-d (lambda (den) (cadddr den)))  ; ok
 
@@ -109,7 +109,9 @@
     (cons 'lambda (list '(d) (list
         (cons 'lambda (list '(f-try) (cons 'cond (list
             (list '(eq f-try 'bad-insertion)
-                (cons 'make-vapp (list (list 'quote f) (list (list 'valexp-insert (list 'quote e)) 'd))) )
+                (cons 'make-vapp (list (list 'quote f) (list
+                    (list 'valexp-insert (list 'quote e))
+                    'd ))) )
             (list t
                 (cons 'make-vapp (list 'f-try (list 'quote e))) ) ))))
         (list (list 'valexp-insert (list 'quote f)) 'd) ))) ))  ; ok
@@ -184,17 +186,17 @@
 
         ; eq (exp-typename exp) 'app
         ( t  'interpreter-error) ))
-    (cadr (vexp-exp vexp)) )))
+    (vexp-exp vexp) )))
 
 (vapp-next (lambda (vapp s) (cond
     ; apply a function
 
-    ; Next two cases evaluate a sub-expression
+    ; Next case evaluates a sub-expression
     ;;case VApp(_,_) => 
     ;;  State(s.valexp.nextExp, s.env, RetCont(s.valexp.insert(_), s.env, s.cont))
     ; where "s.valexp.insert(_)" means the anonymous function
     ; "x => s.valexp.insert(x)"
-
+    ;
     ; If 'a' is not a "denotable":
     ;; State(VApp(a,b),c,d) ==> State(a,c,RetCont( x => VApp(x,b) ,c,d)
     ; If 'a' is a "denotable" but 'b' is not:
@@ -203,7 +205,13 @@
          (not (eq (valexp-typename (vapp-e vapp)) 'den)) )
      (make-state (exp->valexp (valexp-nextexp (state-valexp s)))
                  (state-env s)
-                 (make-retcont (lambda (clo) (valexp-insert (state-valexp s) clo))
+                            ; `(lambda (clo) ((valexp-insert (state-valexp ,s)) clo))
+                 (make-retcont (cons 'lambda
+                                   (list '(clo)
+                                       (list (list 'valexp-insert
+                                                   (list 'state-valexp
+                                                         (list 'quote s)) )
+                                             'clo ) ) )
                                (state-env s)
                                (state-cont s) ) ) )
     ( t
