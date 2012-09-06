@@ -32,8 +32,8 @@
 
 ; A funarg device.
 ; Not authentic Lisp 1. Possibly Lisp 1.5. Definitely Scheme-ish.
-; params: x, expression (atom) to find
-;         a, list of assoc lists, most recent first
+; params: x, expression (symbol) to find
+;         a, list of assoc lists, most recent first, minimally: (())
 ; return:  car: an assoc list in a that has key x, if any; or else ()
 ;         cadr: the value for x in that assoc list, if any; or else ()
 (env-find       (label env-find (lambda (x a) (cond
@@ -51,33 +51,46 @@
              x (car a) ) )) ))))
 
 
-; Not yet tested.
-; a: list of assoc lists, most recent first
-;(label eval     (lambda (x a) (cond
-    ;((atom x) (
-        ;(lambda (alist-value) (cond
-        ;   ((null (car alist-value))    x)
-        ;   ( t                         (cadr alist-value)) ))
-        ;(env-assoc x a) ))
-    ;((atom (car x)) (
-        ;((eq (car x) 'quote) (cadr x))
-        ;((eq (car x) 'cond) (
-            ;(lambda (pairs) (cond
-                ;((null pairs) ())  ; standard?
-                ;((eval (car pairs) a)
-                    ;(eval (cadar pairs) a))
-                ;( t
-                    ;(eval (cons 'cond (cdr pairs)) a))
-            ;))
-            ;(cdr x) ))
-        ;((quote t) (eval (cons (assoc (car x) a) (cdr x)) a)) ))
-    ;((eq (caar x) 'lambda)
-    ; (eval (caddar x) (append (pair (cadar x) (evlis (cdr x) a)) a)) )
-    ;((eq (caar x) 'label)
-    ; (eval (cons (caddar x) (cdr x)) (cons (list (cadar x) (car x)) a)) ) )))
+; params: x, expression to evaluate
+;         a, list of assoc lists, most recent first, minimally: (())
+; return: reduced expression; hang or crash, if x is too deeply recursive
+(eval           (label eval (lambda (x a) (cond
+    ((null x) ())
+    ((atom x) (
+        (lambda (alist-value) (cond
+           ((null (car alist-value))    x)
+           ( t                         (cadr alist-value)) ))
+        (env-find x a) ))
+    ((atom (car x)) (cond
+        ((eq (car x) 'quote) (cadr x))
+        ((eq (car x) 'atom) (atom (eval (cadr x) a)))
+        ((eq (car x) 'car) (car (eval (cadr x) a)))
+        ((eq (car x) 'cdr) (cdr (eval (cadr x) a)))
+        ((eq (car x) 'cons) (cons (eval (cadr x) a) (eval (caddr x) a)))
+        ((eq (car x) 'eq) (eq (eval (cadr x) a) (eval (caddr x) a)))
+        ((eq (car x) 'cond) (
+            (lambda (pairs) (cond
+                ((null pairs) ())  ; standard?
+                ((eval (caar pairs) a)
+                    (eval (cadar pairs) a))
+                ( t
+                    (eval (cons 'cond (cdr pairs)) a))
+            ))
+            (cdr x) ))
+        ( t (eval (cons (cadr (env-find (car x) a)) (cdr x)) a)) ))
+    ((eq (caar x) 'lambda)
+     (eval (caddar x) (cons (pair (cadar x) (
+        (label evlis (lambda (x a) (cond
+            ((null x)   ())
+            ( t         (cons (eval (car x) a) (evlis (cdr x) a))) )))
+        (cdr x) a )) a)) )
+    ((eq (caar x) 'label)
+     (eval (cons (caddar x) (cdr x))
+           (cons (cons (list (cadar x) (car x)) ()) a) ) ) ))))
 
 
-(list           (lambda (x y) (cons x (cons y ()))))
+; really a pair, but we Lispers have used that name for a different function
+(list           (lambda (x y) (cons x (cons y ()))))  
 
 
 (not            (lambda (x) (cond (x ()) (t t))))
@@ -86,24 +99,21 @@
 (null           (lambda (x) (eq x ())))
 
 
+; pair: actually, more like Python "zip"
 ; pair: Simpler non-tail-recursive version:
 ; (label pair (lambda (x y) (cond
 ;     ((null x) ())
 ;     ((null y) ())
 ;     ( t       (cons (list (car x) (car y)) (pair (cdr x) (cdr y)))) )))
 ; pair: More complex tail-recursive version:
-(pair           (lambda (x y) (cond
-    ((null (cdr x)) (list (car x) (car y)) )
-    ( t             (
-        (label pair-rev (lambda (xr yr x y) (cond
-            ((not (and x y)) (
-                (label pair-cons (lambda (xr yr z) (cond
-                    ((null xr) z)
-                    ( t        (pair-cons (cdr xr)
-                                          (cdr yr)
-                                          (cons (list (car xr) (car yr)) z) ))
-                    )))
-                xr yr () ))
-            ( t (pair-rev (cons (car x) xr) (cons (car y) yr) (cdr x) (cdr y)))
-            ))
-        () () x y )) ) )))
+(pair           (lambda (x y) (
+    (label pair-rec (lambda (x y r) (cond
+        (   (cond ((null x) t) (t (null y ())))
+            (   (label pair-rev (lambda (f r) (cond
+                    ((null r) f)
+                    ( t      (pair-rev (cons (car r) f) (cdr r))) )))
+                () r) )
+        (    t
+            (pair-rec (cdr x) (cdr y) (cons (list (car x) (car y)) r)) ) )))
+    x y () )))
+
