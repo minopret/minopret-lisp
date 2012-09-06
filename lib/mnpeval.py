@@ -202,7 +202,7 @@ def eval_(x, env=env0, depth=0):
             if e != None:
                 exp = e[x]
             else:
-                raise ValueError
+                raise ValueError(x)
             if trace:
                 trace_result(depth, exp)
             return exp
