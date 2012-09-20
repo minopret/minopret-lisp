@@ -37,56 +37,71 @@
 ; return:  car: an assoc list in a that has key x, if any; or else ()
 ;         cadr: the value for x in that assoc list, if any; or else ()
 (env-find       (label env-find (lambda (x a) (cond
-    ((null x) (list () ()))
-    ((atom a) (list () ()))
+    ((null x) (trace (list () ()) '21))
+    ((atom a) (trace (list () ()) '22))
     ( t       (
         (lambda (alist-value) (cond
-            ((cadr alist-value)  alist-value)
-            ( t                 (env-find x (cdr a))) ))
+            ((cadr alist-value) (trace alist-value '23))
+            ( t                 (trace (env-find x (cdr a)) '24)) ))
         (
             (label env-assoc (lambda (x y) (cond
-                ((null y)           (list () ()))
-                ((eq x (caar y))    (list y (cadar y)))
-                ( t                 (env-assoc x (cdr y))) )))
-             x (car a) ) )) ))))
+                ((null y)           (trace (list () ()) '25))  ; 25*{23, 24}
+                ((eq x (caar y))    (trace (list y (cadar y)) '27))
+                  ; 26*{23, 24} (or (atom y) (atom (car y)) (atom (caar y)) (atom (cdar y)))
+                  ; 27*{23, 24} (and (not (atom (car y))) (not (atom (cdar y))) (eq x (caar y)))
+                ( t                 (trace (env-assoc x (cdr y)) '28)) )))
+                  ; Guarded cdr y: Existence of caar y = caaar a implies that of cdr y.
+                  ; 28*{23, 24} (not (eq x (caaar a)))
+             x (car a) ) )) ))))  ; We guarded against nonexistent car a.
 
 
 ; params: x, expression to evaluate
 ;         a, list of assoc lists, most recent first, minimally: (())
 ; return: reduced expression; hang or crash, if x is too deeply recursive
 (eval           (label eval (lambda (x a) (cond
-    ((null x) ())
-    ((atom x) (
+    ((null x) (trace () '1))
+    ((atom x) ( ; symbol? x
         (lambda (alist-value) (cond
-           ((null (car alist-value))    x)
-           ( t                         (cadr alist-value)) ))
-        (env-find x a) ))
-    ((atom (car x)) (cond
-        ((eq (car x) 'quote) (cadr x))
-        ((eq (car x) 'atom) (atom (eval (cadr x) a)))
-        ((eq (car x) 'car) (car (eval (cadr x) a)))
-        ((eq (car x) 'cdr) (cdr (eval (cadr x) a)))
-        ((eq (car x) 'cons) (cons (eval (cadr x) a) (eval (caddr x) a)))
-        ((eq (car x) 'eq) (eq (eval (cadr x) a) (eval (caddr x) a)))
+           ((null (car alist-value))   (trace x '2))
+           ( t                         (trace (cadr alist-value) '3)) ))
+        (env-find x a) ))  ; {2, 3}*n
+    ((atom (car x)) (cond  ; We guarded against nonexistent car x.
+        ((eq (car x) 'quote) (trace (cadr x) '4))
+        ((eq (car x) 'atom) (trace (atom (eval (cadr x) a)) '5))
+        ((eq (car x) 'car) (trace (car (eval (cadr x) a)) '6))
+        ((eq (car x) 'cdr) (trace (cdr (eval (cadr x) a)) '7))
+        ((eq (car x) 'cons) (trace (cons (eval (cadr x) a) (eval (caddr x) a)) '8))
+        ((eq (car x) 'eq) (trace (eq (eval (cadr x) a) (eval (caddr x) a)) '9))
         ((eq (car x) 'cond) (
             (lambda (pairs) (cond
-                ((null pairs) ())  ; standard?
+                ((null pairs) (trace () '10))  ; standard? 
                 ((eval (caar pairs) a)
-                    (eval (cadar pairs) a))
+                    (trace (eval (cadar pairs) a) '11) )
                 ( t
-                    (eval (cons 'cond (cdr pairs)) a))
+                    (trace (eval (cons 'cond (cdr pairs)) a) '12))
             ))
             (cdr x) ))
-        ( t (eval (cons (cadr (env-find (car x) a)) (cdr x)) a)) ))
-    ((eq (caar x) 'lambda)
-     (eval (caddar x) (cons (pair (cadar x) (
-        (label evlis (lambda (x a) (cond
-            ((null x)   ())
-            ( t         (cons (eval (car x) a) (evlis (cdr x) a))) )))
-        (cdr x) a )) a)) )
+        ( t (trace (eval (cons (cadr (env-find (car x) a)) (cdr x)) a) '13)) )) ; {13}*n
+    ((eq (caar x) 'lambda)  ; We guarded against nonexistent caar x.
+     (eval (caddar x) (cons
+        (pair (cadar x) (
+            (label evlis-rec (lambda (x a r) (cond
+                ((null x) (
+                    (label evlis-rev (lambda (f r) (cond
+                        ((null r) (trace f '14))
+                        ( t (trace
+                            (evlis-rev (cons (car r) f) (cdr r))
+                            '15 )) )))
+                    () r ))
+                ( t (trace
+                    (evlis-rec (cdr x) a (cons (eval (car x) a) r))
+                    '16 )) )))
+            (cdr x) a () ))
+         a )) )
     ((eq (caar x) 'label)
-     (eval (cons (caddar x) (cdr x))
-           (cons (cons (list (cadar x) (car x)) ()) a) ) ) ))))
+     (trace (eval (trace (cons (caddar x) (cdr x)) '19)
+           (trace (cons (cons (list (cadar x) (car x)) ()) a) '20) ) '17) )
+    (t (trace () '18)) ))))
 
 
 ; really a pair, but we Lispers have used that name for a different function
