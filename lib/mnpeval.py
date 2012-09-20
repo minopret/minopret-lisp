@@ -66,19 +66,20 @@ def set_trace(is_trace=False):
 # The Funarg device implements lexical scope and closures.
 class Env(dict):
     def __init__(self, params=Expr(), args=Expr(), outer=None, alist=None):
-        if params != None and args != None:
+        if params == None or args == None:
+            if alist != None:
+                self.update(alist)
+        else:
             self.update(zip(params, args))
-        elif alist != None:
-            self.update(alist)
         self.outer = outer
 
     def find(self, x):
         if x in self:
             return self
-        elif self.outer != None:
-            return self.outer.find(x)
-        else:
+        elif self.outer == None:
             return None
+        else:
+            return self.outer.find(x)
 
     def str_helper(self, rec=False):
         if self.outer == None:
@@ -140,7 +141,7 @@ def mk_builtins(env):
 
 
 def boolean(x):
-    return True if x != Expr() else False
+    return False if x == Expr() else True
 
 
 
@@ -199,10 +200,10 @@ def eval_(x, env=env0, depth=0):
 
         elif boolean(atom_(x)):
             e = env.find(x)
-            if e != None:
-                exp = e[x]
-            else:
+            if e == None:
                 raise ValueError(x)
+            else:
+                exp = e[x]
             if trace:
                 trace_result(depth, exp)
             return exp
@@ -215,8 +216,12 @@ def eval_(x, env=env0, depth=0):
 
         elif x[0] == 'trace':
             exp = x[1]
+            if 2 < len(x):
+                label = ' (' + str(x[2]) + ')'
+            else:
+                label = ''
             val = eval_(exp, env, depth + 1)  # near-miss tail call
-            print 'Trace ' + str(exp) + ":\n " + str(val) + '.'
+            print 'Trace ' + str(exp) + label + ":\n " + str(val) + '.'
             return val
 
         elif x[0] == 'cond':
