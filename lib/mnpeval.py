@@ -221,7 +221,7 @@ def eval_(x, env=env0, depth=0):
             else:
                 label = ''
             val = eval_(exp, env, depth + 1)  # near-miss tail call
-            print 'Trace ' + str(exp) + label + ":\n " + str(val) + '.'
+            print 'Trace ' + str(exp) + label + ":\n " + str(val) + '.' # TODO conditional
             return val
 
         elif x[0] == 'cond':
