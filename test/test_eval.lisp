@@ -38,17 +38,17 @@
 
 '12
 (assert-equal (eval '(cond (() 'x) (t 'y)) '(())) 'y) ; 12
-; (assert-equal (eval '(() x) '_?) '_); 13, 21 ; * INFINITE LOOP!
-; (assert-equal (eval '(f x) 'a) '_); 13, 22 ; * INFINITE LOOP!
+; (assert-equal (eval '(() x) '_?) '_); 13, 21 ; error at 21
+; (assert-equal (eval '(f x) 'a) '_); 13, 22 ; error at 21
 ; 13, 25, 23 ; inconsistent. See 13, 25, 24
-; (assert-equal (eval '(f) '(())) 'y) ; 13, 25, 24 ; * INFINITE LOOP!
-; (assert-equal (eval '(f x) '(())) 'y) ; 13, 25, 24 ; * INFINITE LOOP!
+; (assert-equal (eval '(f) '(())) 'y) ; 13, 25, 24 ; error at 21
+; (assert-equal (eval '(f x) '(())) 'y) ; 13, 25, 24 ; error at 21
 ; (assert-equal (eval '(f) '(a)) 'y) ; 13, 26, {23, 24} ; error (caaar a)
 ; (assert-equal (eval '(f) '((a))) 'y) ; 13, 26, {23, 24} ; error (caaar a)
 (assert-equal (eval '(f '(x y)) '(((f car)))) 'x) ; 13, 27, 23
-; (assert-equal (eval '(f '(x y)) '(((f ())))) 'x) ; 13, 27, 24 ; * INFINITE LOOP!
+; (assert-equal (eval '(f '(x y)) '(((f ())))) 'x) ; 13, 27, 24 ; error at 21
 (assert-equal (eval '(f '(x y)) '(((g cdr) (f car)))) 'x) ; 13, 28, 23
-; (assert-equal (eval '(f '(x y)) '(((g cdr) (f ())))) 'x) ; 13, 28, 24 ; * INFINITE LOOP!
+; (assert-equal (eval '(f '(x y)) '(((g cdr) (f ())))) 'x) ; 13, 28, 24 ; error at 21
 (assert-equal (eval '((lambda () 'x)) '(())) 'x) ; 14
 (assert-equal (eval '((lambda (t) (cons t '(u))) 'x) '(())) '(x u)) ; 15<->16
 

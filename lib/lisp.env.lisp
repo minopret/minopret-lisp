@@ -37,7 +37,7 @@
 ; return:  car: an assoc list in a that has key x, if any; or else ()
 ;         cadr: the value for x in that assoc list, if any; or else ()
 (env-find       (label env-find (lambda (x a) (cond
-    ((null x) (trace (list () ()) '21))
+    ((null x) (trace '() '21)) ; Naive callers will die but not hang.
     ((atom a) (trace (list () ()) '22))
     ( t       (
         (lambda (alist-value) (cond
@@ -52,7 +52,7 @@
                 ( t                 (trace (env-assoc x (cdr y)) '28)) )))
                   ; Guarded cdr y: Existence of caar y = caaar a implies that of cdr y.
                   ; 28*{23, 24} (not (eq x (caaar a)))
-             x (car a) ) )) ))))  ; We guarded against nonexistent car a.
+             x (car a) ) )) ))))  ; We guarded against atom a.
 
 
 ; params: x, expression to evaluate
@@ -65,7 +65,7 @@
            ((null (car alist-value))   (trace x '2))
            ( t                         (trace (cadr alist-value) '3)) ))
         (env-find x a) ))  ; {2, 3}*n
-    ((atom (car x)) (cond  ; We guarded against nonexistent car x.
+    ((atom (car x)) (cond  ; We guarded against atom x.
         ((eq (car x) 'quote) (trace (cadr x) '4))
         ((eq (car x) 'atom) (trace (atom (eval (cadr x) a)) '5))
         ((eq (car x) 'car) (trace (car (eval (cadr x) a)) '6))
@@ -82,7 +82,7 @@
             ))
             (cdr x) ))
         ( t (trace (eval (cons (cadr (env-find (car x) a)) (cdr x)) a) '13)) )) ; {13}*n
-    ((eq (caar x) 'lambda)  ; We guarded against nonexistent caar x.
+    ((eq (caar x) 'lambda)  ; We guarded against atom (car x).
      (eval (caddar x) (cons
         (pair (cadar x) (
             (label evlis-rec (lambda (x a r) (cond
