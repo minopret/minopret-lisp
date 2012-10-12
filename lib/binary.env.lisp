@@ -1,8 +1,18 @@
-; Functions on fixed-size input:
-;      bit^4->hex    base64^2->hex^3  quoted-printable->hex^2*pushback
-; hex->bit^4  hex^3->base64^2  hex^2->quoted-printable  hex->bit^4 (full circle)
+; assumes lib.env.lisp
 ;
-; Functions on variable-size input:
+; Functions on fixed-size input (full circle):
+;      bit^4->hex    base64^2->hex^3  quoted-printable->hex^2r
+; hex->bit^4  hex^3->base64^2  hex^2->quoted-printable  hex->bit^4
+;
+; bit^2+4->hex bit^2+8->hex bit^2+C->hex
+;
+;      quater->bit^2        bit^2->quater
+;      quater^2->hex        hex->quater^2
+;      quater^2*3->base64^2
+;      quater^3->base64     base64->quater^3
+;      quater^6*1->hex^3
+;
+; Functions on variable-size input (full circle):
 ;      bits->hex  base64->hex  quoted-printable->hex
 ; hex->bits  hex->base64  hex->quoted-printable  hex->bits
 ;
@@ -126,6 +136,7 @@
              b ))) )))
     (reverse h) () )))
 
+
 ; params: x, y, and z, three pairs of base-4 (quaternary) digits
 ; return: list of two base64 digits
 (quater^2*3->base64^2 (lambda (x y z) (list
@@ -196,8 +207,7 @@
    ((eq x '3) '((0 (0)) (1 (1)) (2 (2)) (3 (3)) (4 (4)) (5 (5))
                 (6 (6)) (7 (7)) (8 (8)) (9 (9)) (A (:)) (B (= 3 B))
                 (C (<)) (D (= 3 D))
-                                (E (>)) (F (?))
-                 ))
+                                (E (>)) (F (?)) ))
    ((eq x '4) '((0 (@)) (1 (A)) (2 (B)) (3 (C)) (4 (D)) (5 (E))
                 (6 (F)) (7 (G)) (8 (H)) (9 (I)) (A (J)) (B (K))
                 (C (L)) (D (M)) (E (N)) (F (O)) ))
@@ -225,102 +235,43 @@
     (reverse h) () )))
 
 
-; Just put nils in y and z if there aren't enough tokens left.
-(quoted-printable->hex^2*pushback (lambda (x y z) (cond
-    ((eq x '=) (cons y (list z ())))
-    ( t        (append
-        (assoc x '(
-    ; characters intentionally omitted: SPACE PARENS SEMICOLON EQUAL and 7F
-                      (! (2 1)) (" (2 2))   ;(") This comment balances hiliting.
-                                          (# (2 3)) ($ (2 4)) (% (2 5))
-            (& (2 6)) (' (2 7))                     (* (2 A)) (+ (2 B))
-            (, (2 C)) (- (2 D)) (. (2 E)) (/ (2 F)) (0 (3 0)) (1 (3 1))
-            (2 (3 2)) (3 (3 3)) (4 (3 4)) (5 (3 5)) (6 (3 6)) (7 (3 7))
-            (8 (3 8)) (9 (3 9)) (: (3 A))           (< (3 C))          
-            (> (3 E)) (? (3 F)) (@ (4 0)) (A (4 1)) (B (4 2)) (C (4 3))
-            (D (4 4)) (E (4 5)) (F (4 6)) (G (4 7)) (H (4 8)) (I (4 9))
-            (J (4 A)) (K (4 B)) (L (4 C)) (M (4 D)) (N (4 E)) (O (4 F))
-            (P (5 0)) (Q (5 1)) (R (5 2)) (S (5 3)) (T (5 4)) (U (5 5))
-            (V (5 6)) (W (5 7)) (X (5 8)) (Y (5 9)) (Z (5 A)) ([ (5 B))
-            (\ (5 C)) (] (5 D)) (^ (5 E)) (_ (5 F)) (` (6 0)) (a (6 1))
-            (b (6 2)) (c (6 3)) (d (6 4)) (e (6 5)) (f (6 6)) (g (6 7))
-            (h (6 8)) (i (6 9)) (j (6 A)) (k (6 B)) (l (6 C)) (m (6 D))
-            (n (6 E)) (o (6 F)) (p (7 0)) (q (7 1)) (r (7 2)) (s (7 3))
-            (t (7 4)) (u (7 5)) (v (7 6)) (w (7 7)) (x (7 8)) (y (7 9))
-            (z (7 A)) ({ (7 B)) (| (7 C)) (} (7 D)) (~ (7 E)) ))
-        (cons (list y z) ()) )) )))
+; Intentionally produces two hexadecimal digits in reverse order
+; for most ASCII printable characters.
+; Characters intentionally omitted: SPACE PARENS SEMICOLON EQUAL and 7F.
+(quoted-printable->hex^2r (lambda (x) (assoc x '(
+              (! (1 2)) (" (2 2))   ;(") This comment balances hiliting.
+                                  (# (3 2)) ($ (4 2)) (% (5 2))
+    (& (6 2)) (' (7 2))                     (* (A 2)) (+ (B 2))
+    (, (C 2)) (- (D 2)) (. (E 2)) (/ (F 2)) (0 (0 3)) (1 (1 3))
+    (2 (2 3)) (3 (3 3)) (4 (4 3)) (5 (5 3)) (6 (6 3)) (7 (7 3))
+    (8 (8 3)) (9 (9 3)) (: (A 3))           (< (C 3))          
+    (> (E 3)) (? (F 3)) (@ (0 4)) (A (1 4)) (B (2 4)) (C (3 4))
+    (D (4 4)) (E (5 4)) (F (6 4)) (G (7 4)) (H (8 4)) (I (9 4))
+    (J (A 4)) (K (B 4)) (L (C 4)) (M (D 4)) (N (E 4)) (O (F 4))
+    (P (0 5)) (Q (1 5)) (R (2 5)) (S (3 5)) (T (4 5)) (U (5 5))
+    (V (6 5)) (W (7 5)) (X (8 5)) (Y (9 5)) (Z (A 5)) ([ (B 5))
+    (\ (C 5)) (] (D 5)) (^ (E 5)) (_ (F 5)) (` (0 6)) (a (1 6))
+    (b (2 6)) (c (3 6)) (d (4 6)) (e (5 6)) (f (6 6)) (g (7 6))
+    (h (8 6)) (i (9 6)) (j (A 6)) (k (B 6)) (l (C 6)) (m (D 6))
+    (n (E 6)) (o (F 6)) (p (0 7)) (q (1 7)) (r (2 7)) (s (3 7))
+    (t (4 7)) (u (5 7)) (v (6 7)) (w (7 7)) (x (8 7)) (y (9 7))
+    (z (A 7)) ({ (B 7)) (| (C 7)) (} (D 7)) (~ (E 7)) ))))
 
 
-; params: x, a list of US-ASCII characters using quoted-printable encoding
-; return: the list of hexadecimal digits that encode the same
-;         US-ASCII characters as x encodes
-(quoted-printable->hex (lambda (x) (
+(quoted-printable->hex (lambda (chars) (
+    (label loop (lambda (chars accur) (cond
+        ((null chars) (reverse accur))
+        ((eq (car chars) '=) (cond
+            ((null (cdr chars)) (loop () accur))
+            ((hex->bit^4 (cadr chars)) (cond
+                ((null (cddr chars)) (loop (cons (cadr chars) ()) accur))
+                ((hex->bit^4 (caddr chars))
+                 (loop (cdddr chars)
+                       (append (list (caddr chars) (cadr chars)) accur)) )
+                ( t (loop (cdr chars) accur)) ))
+            ( t (loop (cdr chars) accur)) ))
+        ( t (loop (cdr chars)
+                  (append (quoted-printable->hex^2r (car chars))
+                           accur ) )) )))
+    chars () )))
 
-    ; Recursively push back any deferred tokens, convert one character or one
-    ; three-character quoted-printable sequence, and check for termination.
-    ;
-    ; params: pushback, a list of 0-2 characters that have been scanned
-    ;                   but not yet converted
-    ;         w, a list of US-ASCII characters using quoted-printable encoding
-    ;            that have not been scanned
-    ; return: the list of hexadecimal digits that encode the same
-    ;         US-ASCII characters as the pushback and w characters encode
-    (label qp->hex-rec (lambda (pushback w) (
-
-        ; params: f1, function to remove any trailing nils
-        ;             from the pushback list p := caddr hhp.
-        ; return: the list of hexadecimal digits that encode
-        ;         the same US-ASCII characters as w
-        (lambda (f1) (cond
-            ((null pushback) (cond  ; Case: no characters pushed back
-                ((null w) ())
-                ((null (cdr w))         (f1 (quoted-printable->hex^2*pushback
-                    (car w)         ()              () )        () ))
-                ((null (cddr w))        (f1 (quoted-printable->hex^2*pushback
-                    (car w)         (cadr w)        () )        () ))
-                ( t                     (f1 (quoted-printable->hex^2*pushback
-                    (car w)         (cadr w)        (caddr w) ) (cdddr w) )) ))
-            ((null (cdr pushback)) (cond  ; Case: one character pushed back
-                ((null w)               (f1 (quoted-printable->hex^2*pushback
-                    (car pushback)  ()              () )        () ))
-                ((null (cdr w))         (f1 (quoted-printable->hex^2*pushback
-                    (car pushback) (car w)          () )        () ))
-                ( t                     (f1 (quoted-printable->hex^2*pushback
-                    (car pushback) (car w)          (cadr w) )  (cddr w) )) ))
-                                          ; Case: two final characters pushed back
-            ((null w)                   (f1 (quoted-printable->hex^2*pushback
-                    (car pushback) (cadr pushback)  () )        () ))
-                                          ; Case: two non-final characters pushed back
-            ( t                         (f1 (quoted-printable->hex^2*pushback
-                    (car pushback) (cadr pushback)  (car w) )   (cdr w) )) ))
-
-        ; f1: Remove any trailing nils from the pushback list p := caddr hhp.
-       '(lambda (hhp w) (
-
-            (lambda (f2) (cond
-                ((null (caddr hhp)) (f2             ; Case len(p) = 0
-                        (car hhp) (cadr hhp) () w ))
-                ((null (cdr (caddr hhp))) (cond     ; Case len(p) = 1
-                    ; Subcase p[0] = nil
-                    ((null (car (caddr hhp))) (f2
-                        (car hhp) (cadr hhp) () w ))
-                    ; Subcase p[0] <> nil
-                    ( t (f2
-                        (car hhp) (cadr hhp) (cons (car (caddr hhp)) ()) w )) ))
-                ((null (cddr (caddr hhp))) (cond    ; Case len(p) = 2
-                    ; Subcase p[0] = nil. Infer that also p[1] = nil.
-                    ((null (car (caddr hhp))) (f2
-                        (car hhp) (cadr hhp) () w ))
-                    ; Subcase p[0] <> nil /\ p[1] = nil.
-                    ((null (cadr (caddr hhp))) (f2
-                        (car hhp) (cadr hhp) (cons (car (caddr hhp)) ()) w ))
-                    ; Subcase p[0] <> nil /\ p[1] <> nil.
-                    ( t (f2
-                        (car hhp) (cadr hhp) (caddr hhp) w)) )) ))
-
-; f2: Take a step, assuming that h1 and h2 are two hex digits; p is a list of 0-2
-; pushed-back ASCII printables; and w is a non-empty list of ASCII printables.
-           '(lambda (h1 h2 p w) (append (list h1 h2) (qp->hex-rec p w))) )) )))
-; End of qp->hex-rec
-
-    () x ))) ; End of quoted-printable->hex
