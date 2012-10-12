@@ -1,6 +1,8 @@
 ; Library functions for elementary pure Lisp.
 ; Aaron Mansheim 2011-10-01
 ;
+; assumes lisp.env.lisp
+;
 ; Functions in this library so far:
 ;
 ; assert-equal
@@ -8,6 +10,7 @@
 ; cxxr
 ; cxxxr
 ; cxxxxr
+; cdr-while-not-car-eq
 ; equal
 ; fold-left
 ; fold-right
@@ -34,37 +37,43 @@
 
 
 ; The rest of cxxr, cxxxr, cxxxxr, with notes on what they do
-; (in Pascal-ish syntax).
+; (in Python syntax).
 ;car                                                    ; x[0]
-;caar                                                   ; x[0,0]
-(caaar          (lambda (x) (car (car (car x)))))       ; x[0,0,0]
-(caaaar         (lambda (x) (car (car (car (car x)))))) ; x[0,0,0,0]
-(cdaaar         (lambda (x) (cdr (car (car (car x)))))) ; x[0,0,0,1..]
-(cadaar         (lambda (x) (car (cdr (car (car x)))))) ; x[0,0,1]
-(cdaar          (lambda (x) (cdr (car (car x)))))       ; x[0,0,1..]
-(cddaar         (lambda (x) (cdr (cdr (car (car x)))))) ; x[0,0,2..]
-;cadar                                                  ; x[0,1]
-(cdar           (lambda (x) (cdr (car x))))             ; x[0,1..]
-(caadar         (lambda (x) (car (car (cdr (car x)))))) ; x[0,1,0]
-(cdadar         (lambda (x) (cdr (car (cdr (car x)))))) ; x[0,1,1..]
-;caddar                                                 ; x[0,2]
-(cddar          (lambda (x) (cdr (cdr (car x)))))       ; x[0,2..]
-(cdddar         (lambda (x) (cdr (cdr (cdr (car x)))))) ; x[0,3..]
+;caar                                                   ; x[0][0]
+(caaar          (lambda (x) (car (car (car x)))))       ; x[0][0][0]
+(caaaar         (lambda (x) (car (car (car (car x)))))) ; x[0][0][0][0]
+(cdaaar         (lambda (x) (cdr (car (car (car x)))))) ; x[0][0][0][1:]
+(cadaar         (lambda (x) (car (cdr (car (car x)))))) ; x[0][0][1]
+(cdaar          (lambda (x) (cdr (car (car x)))))       ; x[0][0][1:]
+(cddaar         (lambda (x) (cdr (cdr (car (car x)))))) ; x[0][0][2:]
+;cadar                                                  ; x[0][1]
+(cdar           (lambda (x) (cdr (car x))))             ; x[0][1:]
+(caadar         (lambda (x) (car (car (cdr (car x)))))) ; x[0][1][0]
+(cdadar         (lambda (x) (cdr (car (cdr (car x)))))) ; x[0][1][1:]
+;caddar                                                 ; x[0][2]
+(cddar          (lambda (x) (cdr (cdr (car x)))))       ; x[0][2:]
+(cdddar         (lambda (x) (cdr (cdr (cdr (car x)))))) ; x[0][3:]
 ;cadr                                                   ; x[1]
-;cdr                                                    ; x[1..]
-(caadr          (lambda (x) (car (car (cdr x)))))       ; x[1,0]
-(caaadr         (lambda (x) (car (car (car (cdr x)))))) ; x[1,0,0]
-(cdaadr         (lambda (x) (cdr (car (car (cdr x)))))) ; x[1,0,1..]
-(cdadr          (lambda (x) (cdr (car (cdr x)))))       ; x[1,1..]
-(cadadr         (lambda (x) (car (cdr (car (cdr x)))))) ; x[1,1]
-(cddadr         (lambda (x) (cdr (cdr (car (cdr x)))))) ; x[1,2..]
+;cdr                                                    ; x[1:]
+(caadr          (lambda (x) (car (car (cdr x)))))       ; x[1][0]
+(caaadr         (lambda (x) (car (car (car (cdr x)))))) ; x[1][0][0]
+(cdaadr         (lambda (x) (cdr (car (car (cdr x)))))) ; x[1][0][1:]
+(cdadr          (lambda (x) (cdr (car (cdr x)))))       ; x[1][1:]
+(cadadr         (lambda (x) (car (cdr (car (cdr x)))))) ; x[1][1]
+(cddadr         (lambda (x) (cdr (cdr (car (cdr x)))))) ; x[1][2:]
 ;caddr                                                  ; x[2]
-(cddr           (lambda (x) (cdr (cdr x))))             ; x[2..]
-(caaddr         (lambda (x) (car (car (cdr (cdr x)))))) ; x[2,0]
-(cdaddr         (lambda (x) (cdr (car (cdr (cdr x)))))) ; x[2,1..]
+(cddr           (lambda (x) (cdr (cdr x))))             ; x[2:]
+(caaddr         (lambda (x) (car (car (cdr (cdr x)))))) ; x[2][0]
+(cdaddr         (lambda (x) (cdr (car (cdr (cdr x)))))) ; x[2][1:]
 (cadddr         (lambda (x) (car (cdr (cdr (cdr x)))))) ; x[3]
-(cdddr          (lambda (x) (cdr (cdr (cdr x)))))       ; x[3..]
-(cddddr         (lambda (x) (cdr (cdr (cdr (cdr x)))))) ; x[4..]
+(cdddr          (lambda (x) (cdr (cdr (cdr x)))))       ; x[3:]
+(cddddr         (lambda (x) (cdr (cdr (cdr (cdr x)))))) ; x[4:]
+
+
+(cdr-while-car-eq (label cdr-while-car-eq (lambda (x y) (cond
+    ((null (cdr y))  y)  ; in my uses I want at least one element
+    ((eq x (car y)) (cdr-while-car-eq x (cdr y)))
+    ( t              y) ))))
 
 
 ; Standard: Common Lisp. Probably all Schemes and all Lisps since 1.5.

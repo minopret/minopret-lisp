@@ -12,6 +12,8 @@
 ; The atom + is a positive one digit. The atom - is a negative
 ; one digit. Digits are listed from most to least significant.
 ;
+; assumes lib.env.lisp
+;
 ; Useful functions so far:
 ; trit^4->bal81 bal81->trit^4
 ; bal3-neg bal3-minus bal3-add bal3-mult bal3-lt bal3-gt
@@ -19,13 +21,6 @@
 ; dec-pred             dec-add
 ;
 ; Aaron Mansheim, 2011-09-24
-
-
-; Nonce function
-(cdr-while-car-eq (label cdr-while-car-eq (lambda (x y) (cond
-    ((null (cdr y))  y)  ; in my uses I want at least one element
-    ((eq x (car y)) (cdr-while-car-eq x (cdr y)))
-    ( t              y) ))))
 
 
 ; Where I want more compactness I could use this balanced base-81 encoding
