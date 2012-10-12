@@ -3,4 +3,4 @@ MNPBASE=`dirname $0`/../..
 MNPLIB=$MNPBASE/lib
 cd $MNPLIB
 MNPTEST=../test/timing
-cat lisp.lisp lib.lisp integer.lisp fib.lisp fact.lisp $MNPTEST/test_bal3.lisp | python mnplisp.py --script
+cat $MNPTEST/test_bal3.lisp | $MNPTEST/../../bin/mnplisp -M lisp lib integer fib fact --script $*
