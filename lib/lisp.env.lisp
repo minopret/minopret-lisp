@@ -1,3 +1,10 @@
+; Functions for basic comfort and for metacircular evaluation (eval) in Lisp.
+; Aaron Mansheim 2012-10-17
+;
+; and append assoc caar cadar caddar cadr caddr env-find
+; eval list not null pair
+
+
 (and            (lambda (x y) (cond (x y) (t ()))))
 
 
@@ -32,6 +39,7 @@
 
 ; A funarg device.
 ; Not authentic Lisp 1. Possibly Lisp 1.5. Definitely Scheme-ish.
+; Based on Peter Norvig's Python function in his lis.py.
 ; params: x, expression (symbol) to find
 ;         a, list of assoc lists, most recent first, minimally: (())
 ; return:  car: an assoc list in a that has key x, if any; or else ()
