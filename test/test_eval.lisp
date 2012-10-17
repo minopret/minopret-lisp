@@ -55,6 +55,6 @@
 '{15,16}
 (assert-equal (eval '((lambda (s t) (cons s (cons t '(u)))) 'x 'y)
     '(()) ) '(x y u)) ; 15<->16
-(assert-equal (eval '((label b c) d) '(((c car) (d (u v))))) 'u); 17
-(assert-equal (eval '((x)) '(())) '()); 18
+(assert-equal (eval '((label b c) d) '(((c car) (d (u v))))) 'u) ; 17
+(assert-equal (eval '((x)) '(())) '()) ; 18
 
