@@ -29,7 +29,7 @@ Whether it looks like it or not, I'm trying to make it easy to understand. My st
 * The interpreter is written in Python, an easy-to-read language. Its parts are:
     1. handle command line options and print how to use them (104 commented lines of code),
     2. **read** a program (90 commented lines of code),
-    3. "**eval**" (291 commented lines of code): run a program and perform its fundamental operations. The "eval" part provides two classic ways to create a value that is a subroutine: self-referencing (the unfashionable early Lisp "label" construct) or not self-referencing ("lambda"). It is more-or-less recreated in the "eval" function in the library that is mentioned above.
+    3. **eval** (291 commented lines of code): run a program and perform its fundamental operations. The "eval" part provides two classic ways to create a value that is a subroutine: self-referencing (the unfashionable early Lisp "label" construct) or not self-referencing ("lambda"). It is more-or-less recreated in the "eval" function in the library that is mentioned above.
     4. **print** a result (55 commented lines of code).
 
 Answers to unasked questions:
