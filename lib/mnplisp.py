@@ -34,11 +34,11 @@ def read_eval_print(env_pairs_string, prompt=None):
                 yi = eval_(xi)
             if yi != None and str(yi) != '' \
                     and not isinstance(yi, FunctionType):
-                print yi
+                print(yi)
     except EOFError:
         exit(0)
     except StopIteration:
-        print StopIteration
+        print(StopIteration)
     except Exception:
         traceback.print_exc()
 

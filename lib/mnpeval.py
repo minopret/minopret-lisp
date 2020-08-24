@@ -149,14 +149,14 @@ env0 = mk_builtins(Env())
 
 
 def trace_result(depth, exp):
-    pass  # print ('│' * depth) + '└  Result:  ' + str(exp) + '.'
+    pass  # print(('│' * depth) + '└  Result:  ' + str(exp) + '.')
 
 
 def trace_evaluate_or_restate(header, x, env):
     if not boolean(atom_(x)) and (
             car_(x) not in "quote atom car cdr cons eq list append".split() ):
-        print header,
-        print str(x) + '   IN ENV ' + str(env)  + '.'
+        print(header, )
+        print(str(x) + '   IN ENV ' + str(env)  + '.')
 
 
 def trace_evaluate(depth, x, env):
@@ -166,7 +166,7 @@ def trace_evaluate(depth, x, env):
 
 
 def trace_apply(depth, f, x):
-    pass  # print ('│' * depth) + '├    Apply   ' + f + ' to ' + str(x) + '.'
+    pass  # print(('│' * depth) + '├    Apply   ' + f + ' to ' + str(x) + '.')
 
 
 def trace_restate(depth, x, env):
@@ -221,7 +221,7 @@ def eval_(x, env=env0, depth=0):
             else:
                 label = ''
             val = eval_(exp, env, depth + 1)  # near-miss tail call
-            print 'Trace ' + str(exp) + label + ":\n " + str(val) + '.' # TODO conditional
+            print('Trace ' + str(exp) + label + ":\n " + str(val) + '.') # TODO conditional
             return val
 
         elif x[0] == 'cond':

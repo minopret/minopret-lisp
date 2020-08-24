@@ -57,7 +57,7 @@ def compile_expr(x):
     elif x[0] == 'trace':
         exp = x[1]
         val = eval_(exp, env)  # near-miss tail call
-        print 'Trace ' + str(exp) + ': ' + str(val) + '.'
+        print('Trace ' + str(exp) + ': ' + str(val) + '.')
         return val
 
     elif x[0] == 'cond':
@@ -123,7 +123,7 @@ def compile_expr(x):
         y0 = y.pop(0)  # EXCEPT y0 is a near-miss tail call
         y = Expr(y)
         if trace:
-            print 'Apply ' + str(y0) + ' to ' + str(y) + '.'
+            print('Apply ' + str(y0) + ' to ' + str(y) + '.')
         return y0(*y)
            
  
